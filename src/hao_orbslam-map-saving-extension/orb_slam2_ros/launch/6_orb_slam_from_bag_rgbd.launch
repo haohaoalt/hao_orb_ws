@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+
+
+<!-- setup arguments -->
+<!-- rosbag arguments $(env HOME)/datasets/KITTI/2022-11-26-22-29-36.bag-->
+<arg name="bag_data_path"                    default="/media/hao007/datasets/SCI_DATA/rgbd1.bag"/>
+
+<!-- ORBSLAM arguments -->
+<arg name="octomap_enabled"         		default="true"/>
+
+<!-- feature visualizer arguments -->
+<arg name="visualize_orb_features"          default="true"/>
+
+
+<!-- rosbag replay-->
+<param name="use_sim_time" value="true"/>
+<node pkg="rosbag" type="play" name="player" output="screen" args="$(arg bag_data_path) --clock --pause -r 1">
+  <remap from="/device_0/sensor_1/Color_0/image/data" to="/camera/rgb/image_raw"/>
+  <remap from="/device_0/sensor_0/Depth_0/image/data" to="/camera/depth_registered/image_raw"/>
+</node>
+
+<!-- ORBSLAM2 launch -->
+<include file="$(find orb_slam2_ros)/launch/orb_slam_rgbd.launch">
+  <arg name="octomap_enabled"   value="true"/>
+</include>
+
+<!-- rqt_image_view for visualization of extracted ORB featues in camera frame -->
+<node pkg="rqt_image_view" type="rqt_image_view" name="rqt_image_view" args="image:=/orb_slam2/frame" if="$(arg visualize_orb_features)"/>
+
+</launch>

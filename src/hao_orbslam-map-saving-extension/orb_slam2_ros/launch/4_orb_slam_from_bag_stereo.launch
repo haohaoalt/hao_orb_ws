@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+
+
+<!-- setup arguments -->
+<!-- rosbag arguments $(env HOME)/datasets/KITTI/2022-11-26-22-29-36.bag-->
+<arg name="bag_data_path"                    default="/media/hao007/datasets/SCI_DATA/zed/zed.bag"/>
+
+<!-- ORBSLAM arguments -->
+<arg name="octomap_enabled"         		default="false"/>
+
+<!-- feature visualizer arguments -->
+<arg name="visualize_orb_features"          default="true"/>
+
+
+<!-- rosbag replay-->
+<param name="use_sim_time" value="true"/>
+<node pkg="rosbag" type="play" name="player" output="screen" args="$(arg bag_data_path) --clock --pause -r 1">
+  <remap from="/zed2/zed_node/left/image_rect_gray" to="left/image_rect_color"/>
+  <remap from="/zed2/zed_node/right/image_rect_gray" to="right/image_rect_color"/>
+</node>
+
+<!-- ORBSLAM2 launch -->
+<include file="$(find orb_slam2_ros)/launch/orb_slam_stereo.launch">
+  <arg name="octomap_enabled"   value="false"/>
+</include>
+
+<!-- rqt_image_view for visualization of extracted ORB featues in camera frame -->
+<node pkg="rqt_image_view" type="rqt_image_view" name="rqt_image_view" args="image:=/orb_slam2/frame" if="$(arg visualize_orb_features)"/>
+
+</launch>
