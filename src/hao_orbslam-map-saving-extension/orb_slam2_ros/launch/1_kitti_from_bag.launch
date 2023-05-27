@@ -4,7 +4,7 @@
 
 <!-- setup arguments -->
 <!-- rosbag arguments -->
-<arg name="bag_data_path"   default="/media/slam007/datasets/KITTI/kitti_raw/rosbag/g07_kitti_2011_09_30_drive_0027_synced.bag"/>
+<arg name="bag_data_path"   default="/media/slam007/datasets/Dataset/KITTI/kitti_raw/rosbag/g07_kitti_2011_09_30_drive_0027_synced.bag"/>
 <!-- <arg name="bag_data_path" default="/media/slam007/datasets/EuRoC/ROSBAG/MH_01_easy.bag"/> -->
 
 
@@ -17,7 +17,7 @@
 
 <!-- rosbag replay-->
 <param name="use_sim_time" value="true"/>
-<node pkg="rosbag" type="play" name="player" output="screen" args="$(arg bag_data_path) --clock --pause -r 1">
+<node pkg="rosbag" type="play" name="player" output="screen" args="$(arg bag_data_path) --clock --pause -r 0.5">
   <remap from="kitti/camera_gray_left/image_raw" to="left/image_rect_color"/>
   <!-- <remap from="/cam0/image_raw" to="left/image_rect_color"/> -->
 

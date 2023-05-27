@@ -33,8 +33,11 @@ endif()
 add_subdirectory(Thirdparty/DBoW2)
 add_subdirectory(Thirdparty/g2o)
 
-find_package(OpenCV 3.1.0 REQUIRED)
+find_package(OpenCV REQUIRED)
 find_package(Eigen3 REQUIRED)
+#find_package(Eigen3 3.3.2 EXACT)
+#eigen
+#set(EIGEN_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/ThirdParty/eigen3.3.2")
 #find_package(Pangolin REQUIRED)
 
 find_package(catkin REQUIRED)

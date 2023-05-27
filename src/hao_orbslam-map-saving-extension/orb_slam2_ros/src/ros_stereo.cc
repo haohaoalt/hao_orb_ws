@@ -68,8 +68,6 @@ ros::Publisher stereo_path_pub;
 
 int main(int argc, char **argv)
 {
-    cout << "main haoz test ----------------------1 "<< endl;
-
     // ================== Set stack size =============//
     // Fix map saving/loading problem when large Maps are processed
     const rlim_t kStackSize = 16L * 2014L * 1024L;
@@ -77,10 +75,8 @@ int main(int argc, char **argv)
     int result;
 
     result = getrlimit(RLIMIT_STACK, &rl);
-    cout << "main haoz test ----------------------2 " << endl;
     if (result == 0)
     {
-        cout << "main haoz test ----------------------3 " << endl;
         if (rl.rlim_cur < kStackSize)
         {
             rl.rlim_cur = kStackSize;
@@ -93,7 +89,6 @@ int main(int argc, char **argv)
     }
 
     ros::init(argc, argv, "Stereo");
-    cout << "main haoz test ----------------------4 " << endl;
     ros::start();
 
     if(argc != 4)
@@ -108,15 +103,12 @@ int main(int argc, char **argv)
     const double freq = 100.0;
     // Set up a namespace for topics
     ros::NodeHandle nh("/orb_slam2");
-    cout << "main haoz test ----------------------5 " << endl;
 
     ORB_SLAM2::System SLAM(make_unique<ROSSystemBuilder>(argv[1], argv[2], ORB_SLAM2::System::STEREO, freq, nh));
-    cout << "main haoz test ----------------------6 " << endl;
     ImageGrabber igb(&SLAM);
 
     //Stream class to operate on strings.
     stringstream ss(argv[3]);
-    cout << "main haoz test ----------------------7 " << endl;
     //When the boolalpha format flag is set, bool values are inserted/extracted by their textual representation: either true or false, instead of integral values.
 	  ss >> boolalpha >> igb.do_rectify;
 
@@ -181,7 +173,6 @@ int main(int argc, char **argv)
 
     //haoz add pose pub and stereo_path_pub
     pose_pub = nodeHandler.advertise<geometry_msgs::PoseStamped>("ORB_SLAM/pose",5);
-    cout << "+++++++++++++++++++++ test advertise ++++++++++++++++++++" << endl;
     stereo_path_pub = nodeHandler.advertise<nav_msgs::Path>("ORB_SLAM/path",10);
 
 
@@ -193,7 +184,6 @@ int main(int argc, char **argv)
 
     // Stop all threads
     SLAM.Shutdown();
-    cout << " test Shutdowm ++++++++++++++++++++++++++++" << endl;
     printf("Time taken between SLAM.Start() and SLAM.Shutdown(): %.2fs\n", (double)(clock() - tStart)/CLOCKS_PER_SEC);
 
     // Save camera trajectory, you find those files in roborace_ws/devel_isolated/orb_slam2_ros/lib/orb_slam2_ros
@@ -241,13 +231,11 @@ void ImageGrabber::GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft,const se
         cv::remap(cv_ptrRight->image,imRight,M1r,M2r,cv::INTER_LINEAR);
         // starts the tracking thread
         mpSLAM->TrackStereo(imLeft,imRight,cv_ptrLeft->header.stamp.toSec());
-        cout << "main haoz test ----------------------8  TrackStereo if " << endl;
     }
     else
     {
         cv::Mat Tcw;
         Tcw = mpSLAM->TrackStereo(cv_ptrLeft->image,cv_ptrRight->image,cv_ptrLeft->header.stamp.toSec());
-        cout << "main haoz test ----------------------9  TrackStereo else " << endl;
         geometry_msgs::PoseStamped pose;
         pose.header.stamp = ros::Time::now();
         pose.header.frame_id = "path";

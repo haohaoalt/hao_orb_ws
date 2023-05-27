@@ -775,7 +775,7 @@ void Tracking::CheckReplacedInLastFrame()
 
 bool Tracking::TrackReferenceKeyFrame()
 {
-    cout << "-----------------enter TrackReferenceKeyFrame--------------------------" << endl;
+    //haoz cout << "-----------------enter TrackReferenceKeyFrame--------------------------" << endl;
     // Compute Bag of Words vector
     mCurrentFrame.ComputeBoW();
 

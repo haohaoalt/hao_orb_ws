@@ -238,7 +238,7 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
 
 int Optimizer::PoseOptimization(Frame *pFrame)
 {
-    cout << "------------------enter PoseOptimizaztion------------------" << endl;
+    //haoz: cout << "------------------enter PoseOptimizaztion------------------" << endl;
     g2o::SparseOptimizer optimizer;
     g2o::BlockSolver_6_3::LinearSolverType * linearSolver;
 
