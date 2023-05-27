@@ -2,7 +2,14 @@
 
 # hao_orb_ws
 ORBSLAM2 ; GNSS + ZED + IMU; Jetson nano
-# ORB-SLAM2 map saving and loading for closed circuit localization
+
+
+
+编译
+```
+rosdep install --from-paths src --ignore-src -r -y
+```
+## ORB-SLAM2 map saving and loading for closed circuit localization
 
 ## gps path
 将GPS轨迹，从经纬度WGS-84坐标转换到真实世界xyz坐标系（东北天ENU）下（思路：计算出每个gps坐标相对与第一个坐标的距离（m为单位），比较相邻两点的经纬度变化，赋予位移的方向，然后累加得到轨迹）
@@ -272,4 +279,9 @@ In this document we list all the pieces of code included  by ORB-SLAM2 and linke
 ```
 rosbag record -O mono1.bag /camera/camera_info /camera/image_raw
 ```
+
+## ROSBAG-RECORD
+path1: 校园整个转圈 行政楼起止
+```
+rosbag record -O path1.bag /gps/fix /zed2i/zed_node/left/camera_info /zed2i/zed_node/left/image_rect_gray /zed2i/zed_node/right/camera_info /zed2i/zed_node/right/image_rect_gray /imu
 

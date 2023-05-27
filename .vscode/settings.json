@@ -1,0 +1,11 @@
+{
+    "python.autoComplete.extraPaths": [
+        "/home/hao007/hao_orb_ws/devel/lib/python2.7/dist-packages",
+        "/opt/ros/melodic/lib/python2.7/dist-packages"
+    ],
+    "cmake.sourceDirectory": "/home/hao007/hao_orb_ws/src/zed-ros-wrapper/zed-ros-interfaces",
+    "python.analysis.extraPaths": [
+        "/home/hao007/hao_orb_ws/devel/lib/python2.7/dist-packages",
+        "/opt/ros/melodic/lib/python2.7/dist-packages"
+    ]
+}
