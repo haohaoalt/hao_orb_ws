@@ -33,7 +33,9 @@ endif()
 add_subdirectory(Thirdparty/DBoW2)
 add_subdirectory(Thirdparty/g2o)
 
-find_package(OpenCV REQUIRED)
+set(OpenCV_DIR "/home/hayden/app/opencv/build/")
+set(OpenCV_INCLUDE_DIRS "/home/hayden/app/opencv/include")
+find_package(OpenCV 3.4.5 REQUIRED)
 find_package(Eigen3 REQUIRED)
 #find_package(Eigen3 3.3.2 EXACT)
 #eigen
@@ -50,7 +52,9 @@ include_directories(
   ${PROJECT_SOURCE_DIR}/include
   ${EIGEN3_INCLUDE_DIR}
   ${Pangolin_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
 )
+
 
 set(SRCS
   src/System.cc

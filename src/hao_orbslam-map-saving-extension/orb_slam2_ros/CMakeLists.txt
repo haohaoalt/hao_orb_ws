@@ -11,7 +11,9 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall  -O3 -march=native")
 
 ADD_DEFINITIONS("-std=c++11")
 
-find_package(OpenCV REQUIRED)
+set(OpenCV_DIR "/home/hayden/app/opencv/build/")
+set(OpenCV_INCLUDE_DIRS "/home/hayden/app/opencv/include")
+find_package(OpenCV 3.4.5 REQUIRED)
 #find_package(Pangolin REQUIRED)
 
 find_package(catkin REQUIRED COMPONENTS
@@ -46,6 +48,7 @@ catkin_package(CATKIN_DEPENDS message_runtime std_msgs)
 include_directories(
   ${roscpp_INCLUDE_DIRS}
   ${Pangolin_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
   ${PROJECT_SOURCE_DIR}
   ${PROJECT_SOURCE_DIR}/../orb_slam2_lib
   ${PROJECT_SOURCE_DIR}/../orb_slam2_lib/include

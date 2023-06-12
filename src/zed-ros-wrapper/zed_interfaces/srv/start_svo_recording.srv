@@ -1,4 +1,4 @@
-# Full path is required no relative paths
+# Full path is requiredm no relative paths
 string svo_filename 
 ---
 bool result

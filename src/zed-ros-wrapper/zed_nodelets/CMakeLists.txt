@@ -72,8 +72,6 @@ catkin_package(
     tf2_geometry_msgs
     message_runtime    
     zed_interfaces
-    geometry_msgs
-    visualization_msgs
 )
 
 ###############################################################################
@@ -113,7 +111,6 @@ set(LINK_LIBRARIES
   ${catkin_LIBRARIES}
   ${ZED_LIBRARIES}
   ${CUDA_LIBRARIES}
-  stdc++fs
 )
 
 add_library(ZEDNodelets

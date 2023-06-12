@@ -6,8 +6,6 @@ This package lets you use the ZED stereo camera with ROS. It outputs the camera 
 
 [More information](https://www.stereolabs.com/documentation/guides/using-zed-with-ros/introduction.html)
 
-**Note:** The `zed_interfaces` package has been removed from this repository and moved to its own [`zed-ros-interfaces` repository](https://github.com/stereolabs/zed-ros-interfaces) for allowing better integration of the ZED Wrapper on remote ground stations that do not require the full package to be installed. To update your repository please follow the [new update instructions](https://github.com/stereolabs/zed-ros-wrapper#update-the-repository). For more information please read issue [#750](https://github.com/stereolabs/zed-ros-wrapper/issues/750).
-
 ## Getting started
 
 - First, download the latest version of the ZED SDK on [stereolabs.com](https://www.stereolabs.com/developers/)
@@ -17,16 +15,14 @@ This package lets you use the ZED stereo camera with ROS. It outputs the camera 
 ### Prerequisites
 
 - Ubuntu 20.04
-- [ZED SDK **≥ 3.8**](https://www.stereolabs.com/developers/) and its dependency [CUDA](https://developer.nvidia.com/cuda-downloads)
+- [ZED SDK **≥ 3.5**](https://www.stereolabs.com/developers/) and its dependency [CUDA](https://developer.nvidia.com/cuda-downloads)
 - [ROS Noetic](http://wiki.ros.org/noetic/Installation/Ubuntu)
 
-or
-
 - Ubuntu 18.04
-- [ZED SDK **≥ 3.8**](https://www.stereolabs.com/developers/) and its dependency [CUDA](https://developer.nvidia.com/cuda-downloads)
+- [ZED SDK **≥ 3.5**](https://www.stereolabs.com/developers/) and its dependency [CUDA](https://developer.nvidia.com/cuda-downloads)
 - [ROS Melodic](http://wiki.ros.org/melodic/Installation/Ubuntu)
 
-### Build the repository
+### Build the program
 
 The zed_ros_wrapper is a catkin package. It depends on the following ROS packages:
 
@@ -51,28 +47,13 @@ The zed_ros_wrapper is a catkin package. It depends on the following ROS package
 Open a terminal, clone the repository, update the dependencies and build the packages:
 
     $ cd ~/catkin_ws/src
-    $ git clone --recursive https://github.com/stereolabs/zed-ros-wrapper.git
+    $ git clone https://github.com/stereolabs/zed-ros-wrapper.git
     $ cd ../
     $ rosdep install --from-paths src --ignore-src -r -y
     $ catkin_make -DCMAKE_BUILD_TYPE=Release
     $ source ./devel/setup.bash
 
-#### Update the local repository
-
-To update the repository to the latest release you must use the following command to retrieve the latest commits of `zed-ros-wrapper` and of all the submodules:
-
-    $ git checkout master # if you are not on the main branch  
-    $ git pull --recurse-submodules # update recursively all the submodules
-
-Remember to always clean the cache of your catkin workspace before compiling with the `catkin_make` command to be sure that everything will work as expected:
-
-    $ roscd
-    $ cd ..
-    $ rm -rf build
-    $ rm -rf devel
-    $ catkin_make -DCMAKE_BUILD_TYPE=Release
-
-### Run the ZED wrapper
+### Run the program
 
 To launch the ZED node use
 
@@ -87,10 +68,6 @@ ZED Mini camera:
 ZED2 camera:
 
     $ roslaunch zed_wrapper zed2.launch
-
-ZED2i camera:
-
-    $ roslaunch zed_wrapper zed2i.launch    
 
  To select the ZED from its serial number:
  
