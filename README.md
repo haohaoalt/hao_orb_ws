@@ -284,4 +284,41 @@ rosbag record -O mono1.bag /camera/camera_info /camera/image_raw
 path1: 校园整个转圈 行政楼起止
 ```
 rosbag record -O path1.bag /gps/fix /zed2i/zed_node/left/camera_info /zed2i/zed_node/left/image_rect_gray /zed2i/zed_node/right/camera_info /zed2i/zed_node/right/image_rect_gray /imu
+```
+可能用到指令：
+```
+- 确保Jetson NX与笔记本在同一局域网下 
+本机：192.168.43.29   NX 192.168.43.249  
+命令：ssh hayden@192.168.43.249 
+- 启动相机  
+ssh hayden@192.168.43.249   
+cd hao_orb_ws 
+source devel/setup.bash 
+roslaunch zed_wrapper zed2i.launch
+- 启动gps+imu  
+ssh hayden@192.168.43.249   
+cd hao_orb_ws 
+source devel/setup.bash 
+roslaunch fdilink_ahrs ahrs_data.launch
+- 配置主从机  
+ssh hayden@192.168.43.249    
+vim .bashrc    
+输入i 进入编辑模式 
+最下面添加
+export ROS_MASTER_URI=http://192.168.43.249:11311  
+export ROS_HOSTNAME=192.168.43.249
+# esc   冒号 wq 退出
+笔记本设置  vim .bashrc    
+输入i 进入编辑模式 
+最下面添加
+export ROS_MASTER_URI=http://192.168.43.249:11311  
+export ROS_HOSTNAME=192.168.43.29
+上述处理好后更新环境变量 
+source ~/.bashrc
+启动相机后
+笔记本录包：
+mkdir rosbag 
+cd rosbag
+rosbag record -O zxm.bag /zed2i/zed_node/left/camera_info /zed2i/zed_node/left/image_rect_gray /zed2i/zed_node/right/camera_info /zed2i/zed_node/right/image_rect_gray 
+```
 
