@@ -4,14 +4,14 @@
 
 <!-- setup arguments -->
 <!-- TODO: rosbag arguments -->
-<arg name="bag_data_path"   default="/media/slam007/datasets/0613/1f2/zed1f1.2.bag"/>
+<arg name="bag_data_path"   default="/media/slam007/datasets/0613/out/out.bag"/>
 <!-- <arg name="bag_data_path" default="/media/slam007/datasets/EuRoC/ROSBAG/MH_01_easy.bag"/> -->
 
 <!-- ORBSLAM arguments -->
 <arg name="octomap_enabled"         		default="false"/>
 
 <!-- feature visualizer arguments -->
-<arg name="visualize_orb_features"          default="false"/>
+<arg name="visualize_orb_features"          default="true"/>
 
 
 <!-- rosbag replay-->
@@ -21,17 +21,14 @@
   仅播放前十秒：rosbag play -u 10 xx.bag
   从120s开始播放，只播放20s，就是播放120s~140s的时间段： rosbag play xx.bag -s 120 -u 20
   -->
-<node pkg="rosbag" type="play" name="player" output="screen" args="$(arg bag_data_path) --clock --pause -r 1 ">
+<node pkg="rosbag" type="play" name="player" output="screen" args="$(arg bag_data_path) --clock --pause -r 2">
   <!-- TODO: KITTI  -->
   <!-- <remap from="kitti/camera_gray_left/image_raw" to="left/image_rect_color"/> -->
   <remap from="/zed2i/zed_node/left/image_rect_gray" to="left/image_rect_color"/>
+  <remap from="/zed2i/zed_node/right/image_rect_gray" to="right/image_rect_color"/>
 
   <!--  -->
   <!-- <remap from="/cam0/image_raw" to="left/image_rect_color"/> -->
-
-  <!-- <remap from="kitti/camera_gray_right/image_raw" to="right/image_rect_color"/> -->
-  <remap from="/zed2i/zed_node/right/image_rect_gray" to="right/image_rect_color"/>
-
   <!-- <remap from="/cam1/image_raw" to="right/image_rect_color"/> -->
 
 </node>
@@ -40,7 +37,8 @@
 <!-- <include file="$(find orb_slam2_ros)/launch/orb_slam_kitti.launch">
   <arg name="octomap_enabled"   value="false"/>
 </include> -->
-<arg name="orb_settings_file" default="$(find orb_slam2_ros)/settings/zed2i_save.yaml"/>
+<!-- TODO -->
+<arg name="orb_settings_file" default="$(find orb_slam2_ros)/settings/zed2i_load.yaml"/>
 <!-- ORBSLAM2 with Ros -->
 <!-- Provide the correct settings .yaml file to specify camera parameters and ORB feature settings -->
 <node pkg="orb_slam2_ros" type="Stereo" name="orb_slam2" args="$(find orb_slam2_lib)/Vocabulary/ORBvoc.bin $(arg orb_settings_file) False" cwd="node" output="screen">
