@@ -198,7 +198,8 @@ vector<KeyFrame*> KeyFrameDatabase::DetectLoopCandidates(KeyFrame* pKF, float mi
 
 vector<KeyFrame*> KeyFrameDatabase::DetectRelocalizationCandidates(Frame *F)
 {
-    list<KeyFrame*> lKFsSharingWords;
+    //cout << "================enter DetectRelocalizationCandidates" << endl;
+    list<KeyFrame *> lKFsSharingWords;
 
     // Search all keyframes that share a word with current frame
     {

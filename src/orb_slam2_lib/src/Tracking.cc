@@ -775,7 +775,8 @@ void Tracking::CheckReplacedInLastFrame()
 
 bool Tracking::TrackReferenceKeyFrame()
 {
-    //haoz cout << "-----------------enter TrackReferenceKeyFrame--------------------------" << endl;
+    //haoz 
+    //cout << "-----------------enter TrackReferenceKeyFrame--------------------------" << endl;
     // Compute Bag of Words vector
     mCurrentFrame.ComputeBoW();
 
@@ -814,12 +815,13 @@ bool Tracking::TrackReferenceKeyFrame()
                 nmatchesMap++;
         }
     }
-
+    //cout << "-----------------end TrackReferenceKeyFrame--------------------------" << endl;
     return nmatchesMap>=10;
 }
 
 void Tracking::UpdateLastFrame()
 {
+    cout << "-----------------enter UpdateLastFrame  (reference keyframe)--------------------------" << endl;
     // Update pose according to reference keyframe
     KeyFrame* pRef = mLastFrame.mpReferenceKF;
     cv::Mat Tlr = mlRelativeFramePoses.back();
@@ -886,6 +888,7 @@ void Tracking::UpdateLastFrame()
 
 bool Tracking::TrackWithMotionModel()
 {
+    //cout << "-----------------enter TrackWithMotionModel--------------------------" << endl;
     ORBmatcher matcher(0.9,true);
 
     // Update last frame pose according to its reference keyframe
@@ -1365,6 +1368,7 @@ bool Tracking::Relocalization()
 
     // Relocalization is performed when tracking is lost
     // Track Lost: Query KeyFrame Database for keyframe candidates for relocalisation
+    cout << " =========== int Tracking::Relocalization ============== " << endl;
     vector<KeyFrame*> vpCandidateKFs = mpKeyFrameDB->DetectRelocalizationCandidates(&mCurrentFrame);
 
     if(vpCandidateKFs.empty())

@@ -568,6 +568,7 @@ double PnPsolver::reprojection_error(const double R[3][3], const double t[3])
 
 void PnPsolver::estimate_R_and_t(double R[3][3], double t[3])
 {
+  //cout << "=========== in PnPsolver::estimate_R_and_t =======" << endl;;
   double pc0[3], pw0[3];
 
   pc0[0] = pc0[1] = pc0[2] = 0.0;
