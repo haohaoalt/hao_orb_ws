@@ -118,7 +118,7 @@ void              System::GenericBuilder::ResetMap(Map *pMap) { mpMap.reset(pMap
 
 
 
-//zhanghao 加载地图模式
+//Hayden 加载地图模式
 bool System::GenericBuilder::LoadMap(const string &filename)
 {
 

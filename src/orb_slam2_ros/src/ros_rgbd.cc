@@ -40,17 +40,29 @@
 //in order to handle large maps
 #include <sys/resource.h>
 
+//used to measure running time of SLAM system
+#include <time.h>
+
+//Hayden publish orbslam2 pose for rgbd
+#include<tf/transform_broadcaster.h>
+#include"Converter.h"
+#include<nav_msgs/Path.h>
+
 using namespace std;
 
 class ImageGrabber
 {
 public:
+
     ImageGrabber(ORB_SLAM2::System* pSLAM):mpSLAM(pSLAM){}
 
     void GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const sensor_msgs::ImageConstPtr& msgD);
 
     ORB_SLAM2::System* mpSLAM;
 };
+ros::Publisher pose_pub;
+nav_msgs::Path rgbd_path;
+ros::Publisher rgbd_path_pub;
 
 int main(int argc, char **argv)
 {
@@ -59,6 +71,7 @@ int main(int argc, char **argv)
     const rlim_t kStackSize = 16L * 2014L * 1024L;
     struct rlimit rl;
     int result;
+    cout << "========test point 1======" << endl; 
 
     result = getrlimit(RLIMIT_STACK, &rl);
     if (result == 0)
@@ -74,7 +87,10 @@ int main(int argc, char **argv)
         }
     }
     ros::init(argc, argv, "RGBD");
+    cout << "========test point 2======" << endl;
+
     ros::start();
+    cout << "========test point 3======" << endl;
 
     if(argc != 3)
     {
@@ -83,22 +99,39 @@ int main(int argc, char **argv)
         return 1;
     }
 
+
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
     const double freq = 100.0;
     // Set up a namespace for topics
     ros::NodeHandle nh("/orb_slam2");
     ORB_SLAM2::System SLAM(make_unique<ROSSystemBuilder>(argv[1], argv[2], ORB_SLAM2::System::RGBD, freq, nh));
+    cout << "========test point 4======" << endl;
 
     ImageGrabber igb(&SLAM);
+    cout << "========test point 5======" << endl;
+
     ros::NodeHandle nodeHandler;
+    cout << "========test point 6======" << endl;
 
     message_filters::Subscriber<sensor_msgs::Image> rgb_sub(nodeHandler, "/camera/rgb/image_raw", 1);
     message_filters::Subscriber<sensor_msgs::Image> depth_sub(nodeHandler, "camera/depth_registered/image_raw", 1);
     typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> sync_pol;
     message_filters::Synchronizer<sync_pol> sync(sync_pol(10), rgb_sub,depth_sub);
+    cout << "========test point 7======" << endl;
+
     sync.registerCallback(boost::bind(&ImageGrabber::GrabRGBD,&igb,_1,_2));
 
+    //haoz add pose pub and stereo_path_pub
+    pose_pub = nodeHandler.advertise<geometry_msgs::PoseStamped>("ORB_SLAM/pose",5);
+    rgbd_path_pub = nodeHandler.advertise<nav_msgs::Path>("ORB_SLAM/path",10);
+
+
+    clock_t tStart = clock();
+    cout << "========test point 8======" << endl;
     SLAM.Start();
+    
+
+    //processes messages from the callback queue
     ros::spin();
 
     // Stop all threads
@@ -141,4 +174,24 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const senso
     }
 
     mpSLAM->TrackRGBD(cv_ptrRGB->image,cv_ptrD->image,cv_ptrRGB->header.stamp.toSec());
+    cv::Mat Tcw;
+    geometry_msgs::PoseStamped pose;
+    pose.header.stamp = ros::Time::now();
+    pose.header.frame_id = "path";
+
+    cv::Mat Rwc = Tcw.rowRange(0, 3).colRange(0, 3).t(); // Rotation information
+    cv::Mat twc = -Rwc * Tcw.rowRange(0, 3).col(3);      // translation information
+    vector<float> q = ORB_SLAM2::Converter::toQuaternion(Rwc);
+
+    tf::Transform new_transform;
+    new_transform.setOrigin(tf::Vector3(twc.at<float>(0, 0), twc.at<float>(0, 1), twc.at<float>(0, 2)));
+    tf::Quaternion quaternion(q[0], q[1], q[2], q[3]);
+    new_transform.setRotation(quaternion);
+    tf::poseTFToMsg(new_transform, pose.pose);
+    pose_pub.publish(pose);
+
+    rgbd_path.header.frame_id = "path";
+    rgbd_path.header.stamp = ros::Time::now();
+    rgbd_path.poses.push_back(pose);
+    rgbd_path_pub.publish(rgbd_path);
 }

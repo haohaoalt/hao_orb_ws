@@ -4,8 +4,7 @@
 
 <!-- setup arguments -->
 <!-- rosbag arguments -->
-<arg name="bag_data_path"   default="/media/slam007/datasets/Dataset/KITTI/kitti_raw/rosbag/g09_kitti_2011_09_30_drive_0033_synced.bag"/>
-<!-- <arg name="bag_data_path" default="/media/slam007/datasets/EuRoC/ROSBAG/MH_01_easy.bag"/> -->
+<arg name="bag_data_path"   default="/media/slam007/Friday/Dataset/KITTI/kitti_raw/rosbag/g09_kitti_2011_09_30_drive_0033_synced.bag"/>
 
 
 <!-- ORBSLAM arguments -->
@@ -30,7 +29,7 @@
 <!-- <include file="$(find orb_slam2_ros)/launch/orb_slam_kitti.launch">
   <arg name="octomap_enabled"   value="false"/>
 </include> -->
-<arg name="orb_settings_file" default="$(find orb_slam2_ros)/settings/KITTI04-12_save.yaml"/>
+<arg name="orb_settings_file" default="$(find orb_slam2_ros)/settings/KITTI04-12_load.yaml"/>
 
 <!-- ORBSLAM2 with Ros -->
 <!-- Provide the correct settings .yaml file to specify camera parameters and ORB feature settings -->

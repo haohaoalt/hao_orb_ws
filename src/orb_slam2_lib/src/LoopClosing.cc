@@ -57,6 +57,8 @@ void LoopClosing::SetLocalMapper(LocalMapping *pLocalMapper)
 
 void LoopClosing::Run()
 {
+    cout << "========test point 10======" << endl;
+
     mbFinished =false;
 
     while(1)

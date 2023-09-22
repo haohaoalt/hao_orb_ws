@@ -49,6 +49,7 @@ void LocalMapping::SetTracker(Tracking *pTracker)
 void LocalMapping::Run()
 {
 
+    cout << "========test point 9======" << endl;
 
     mbFinished = false;
 
