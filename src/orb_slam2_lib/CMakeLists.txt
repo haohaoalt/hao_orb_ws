@@ -31,9 +31,10 @@ add_subdirectory(Thirdparty/g2o)
 
 find_package(OpenCV REQUIRED)
 
-#eigen
-set(EIGEN_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/ThirdParty/eigen3.3.2")
-#find_package(Pangolin REQUIRED)
+# eigen
+# set(EIGEN_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/ThirdParty/eigen3.3.2")
+# find_package(Pangolin REQUIRED)
+find_package(Eigen3 REQUIRED)
 
 find_package(catkin REQUIRED)
 catkin_package(
@@ -43,7 +44,7 @@ catkin_package(
 include_directories(
   ${PROJECT_SOURCE_DIR}
   ${PROJECT_SOURCE_DIR}/include
-  ${EIGEN3_INCLUDE_DIR}
+  ${EIGEN_INCLUDE_DIR}
   ${Pangolin_INCLUDE_DIRS}
 )
 MESSAGE(STATUS "OpenCV version and OpenCV_LIBS: " ${OpenCV_VERSION} ${OpenCV_LIBS})
