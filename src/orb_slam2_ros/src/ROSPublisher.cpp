@@ -299,7 +299,6 @@ void ROSPublisher::octomapWorker()
                 stashMapPoints(true); // stash whole map
                 clear_octomap_ = false; // TODO: mutex?
             }
-
             pointcloud_map_points_mutex_.lock();
             // insert keypoint to the octomap
             octomap_.insertPointCloud(pointcloud_map_points_, origin, frame);

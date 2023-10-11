@@ -35,7 +35,7 @@
 #include "System.h"
 #include "ROSPublisher.h"
 #include "utils.h"
-
+#include <ros/console.h>
 //for increasing stack size
 //in order to handle large maps
 #include <sys/resource.h>
@@ -68,8 +68,9 @@ ros::Publisher stereo_path_pub;
 
 int main(int argc, char **argv)
 {
-    // ================== Set stack size =============//
-    // Fix map saving/loading problem when large Maps are processed
+    
+    //  ================== Set stack size =============//
+    cout << " ros_stereo main set stack size" << endl;
     const rlim_t kStackSize = 16L * 2014L * 1024L;
     struct rlimit rl;
     int result;
@@ -87,10 +88,22 @@ int main(int argc, char **argv)
             }
         }
     }
-
+    //hayden: init Stereo
     ros::init(argc, argv, "Stereo");
-    ros::start();
+    if (ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug))
+    {
+        ros::console::notifyLoggerLevelsChanged();
+    }
+    // ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug);
 
+    // ROS_DEBUG_STREAM("DEBUG message.");
+    // ROS_INFO_STREAM("INFO message.");
+    // ROS_WARN_STREAM("WARN message.");
+    // ROS_ERROR_STREAM("ERROR message.");
+    // ROS_FATAL_STREAM("FATAL message.");
+    // ROS_INFO("==========================================");
+    // cout << "\033[32m" << "hello world " << "\033[0m" << endl;
+    ros::start();
     if(argc != 4)
     {
         cerr << endl << "Usage: rosrun ORB_SLAM2 Stereo path_to_vocabulary path_to_settings do_rectify" << endl;
@@ -100,18 +113,18 @@ int main(int argc, char **argv)
 
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
+    //hayden freq = 100hz
     const double freq = 100.0;
     // Set up a namespace for topics
     ros::NodeHandle nh("/orb_slam2");
-
     ORB_SLAM2::System SLAM(make_unique<ROSSystemBuilder>(argv[1], argv[2], ORB_SLAM2::System::STEREO, freq, nh));
     ImageGrabber igb(&SLAM);
 
     //Stream class to operate on strings.
     stringstream ss(argv[3]);
     //When the boolalpha format flag is set, bool values are inserted/extracted by their textual representation: either true or false, instead of integral values.
-	  ss >> boolalpha >> igb.do_rectify;
-
+	ss >> boolalpha >> igb.do_rectify;
+    cout << " igb.do_rectify" << endl;
     if(igb.do_rectify)
     {
         // Load settings related to stereo calibration
