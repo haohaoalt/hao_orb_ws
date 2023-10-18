@@ -367,3 +367,7 @@ float64 theta  # 指北角
 
   0. Deta-10的原始坐标系模式
   1. 单独imu的坐标系模式
+
+## darknet ros
+https://zhuanlan.zhihu.com/p/539491000
+https://blog.csdn.net/qq_68489743/article/details/131893450

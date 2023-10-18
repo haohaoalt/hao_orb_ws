@@ -248,6 +248,7 @@ void ImageGrabber::GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft,const se
     else
     {
         cv::Mat Tcw;
+        // hayden ORB_SLAM2中的位姿信息由下列函数返回，将其转换为所需的数据类型发布出去
         Tcw = mpSLAM->TrackStereo(cv_ptrLeft->image,cv_ptrRight->image,cv_ptrLeft->header.stamp.toSec());
         geometry_msgs::PoseStamped pose;
         pose.header.stamp = ros::Time::now();
