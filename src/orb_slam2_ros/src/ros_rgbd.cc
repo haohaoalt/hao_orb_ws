@@ -48,6 +48,10 @@
 #include"Converter.h"
 #include<nav_msgs/Path.h>
 
+// hayden darknet ros darknet_ros_msgs/BoundingBoxes sub
+// #include <darknet_ros_msgs/BoundingBox.h>
+// #include <darknet_ros_msgs/BoundingBoxes.h>
+
 using namespace std;
 
 class ImageGrabber
@@ -60,18 +64,26 @@ public:
 
     ORB_SLAM2::System* mpSLAM;
 };
-ros::Publisher pose_pub;
-nav_msgs::Path rgbd_path;
-ros::Publisher rgbd_path_pub;
-
+// ros::Publisher pose_pub;
+// nav_msgs::Path rgbd_path;
+// ros::Publisher rgbd_path_pub;
+// void personTrack(const darknet_ros_msgs::BoundingBoxes::ConstPtr &msg)
+// {
+//     double xmin = msg->bounding_boxes[0].xmin;
+//     double ymin = msg->bounding_boxes[0].ymin;
+//     double xmax = msg->bounding_boxes[0].xmax;
+//     double ymax = msg->bounding_boxes[0].ymax;
+//     std::cout << "I'm in PersonTracking callback" << std::endl;
+//     std::cout << "xmin ymin xmax ymax" << xmin << " " << ymin << " " << xmax << " " << ymax << std::endl;
+// }
 int main(int argc, char **argv)
 {
     // ================== Set stack size =============//
     // Fix map saving/loading problem when large Maps are processed
+    cout << " ros_rgbd main set stack size" << endl;
     const rlim_t kStackSize = 16L * 2014L * 1024L;
     struct rlimit rl;
     int result;
-    cout << "========test point 1======" << endl; 
 
     result = getrlimit(RLIMIT_STACK, &rl);
     if (result == 0)
@@ -86,48 +98,42 @@ int main(int argc, char **argv)
             }
         }
     }
+    //hayden: init rgbd
     ros::init(argc, argv, "RGBD");
-    cout << "========test point 2======" << endl;
+    if (ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug))
+    {
+        ros::console::notifyLoggerLevelsChanged();
+    }
 
     ros::start();
-    cout << "========test point 3======" << endl;
-
     if(argc != 3)
     {
         cerr << endl << "Usage: rosrun ORB_SLAM2 RGBD path_to_vocabulary path_to_settings" << endl;
         ros::shutdown();
         return 1;
     }
-
-
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
     const double freq = 100.0;
     // Set up a namespace for topics
     ros::NodeHandle nh("/orb_slam2");
     ORB_SLAM2::System SLAM(make_unique<ROSSystemBuilder>(argv[1], argv[2], ORB_SLAM2::System::RGBD, freq, nh));
-    cout << "========test point 4======" << endl;
-
     ImageGrabber igb(&SLAM);
-    cout << "========test point 5======" << endl;
-
     ros::NodeHandle nodeHandler;
-    cout << "========test point 6======" << endl;
+    // ros::Subscriber sub = nodeHandler.subscribe("/darknet_ros/bounding_boxes", 10, personTrack);
 
-    message_filters::Subscriber<sensor_msgs::Image> rgb_sub(nodeHandler, "/camera/rgb/image_raw", 1);
-    message_filters::Subscriber<sensor_msgs::Image> depth_sub(nodeHandler, "camera/depth_registered/image_raw", 1);
+    message_filters::Subscriber<sensor_msgs::Image> rgb_sub(nodeHandler, "/camera/color/image_raw", 1);
+    message_filters::Subscriber<sensor_msgs::Image> depth_sub(nodeHandler, "/camera/aligned_depth_to_color/image_raw", 1);
     typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> sync_pol;
-    message_filters::Synchronizer<sync_pol> sync(sync_pol(10), rgb_sub,depth_sub);
-    cout << "========test point 7======" << endl;
-
+    message_filters::Synchronizer<sync_pol> sync(sync_pol(10), rgb_sub, depth_sub);
+    
     sync.registerCallback(boost::bind(&ImageGrabber::GrabRGBD,&igb,_1,_2));
 
     //haoz add pose pub and stereo_path_pub
-    pose_pub = nodeHandler.advertise<geometry_msgs::PoseStamped>("ORB_SLAM/pose",5);
-    rgbd_path_pub = nodeHandler.advertise<nav_msgs::Path>("ORB_SLAM/path",10);
+    // pose_pub = nodeHandler.advertise<geometry_msgs::PoseStamped>("ORB_SLAM/pose",5);
+    // rgbd_path_pub = nodeHandler.advertise<nav_msgs::Path>("ORB_SLAM/path",10);
 
 
     clock_t tStart = clock();
-    cout << "========test point 8======" << endl;
     SLAM.Start();
     
 
@@ -136,12 +142,12 @@ int main(int argc, char **argv)
 
     // Stop all threads
     SLAM.Shutdown();
+    printf("Time taken between SLAM.Start() and SLAM.Shutdown(): %.2fs\n", (double)(clock() - tStart) / CLOCKS_PER_SEC);
 
     // Save camera trajectory
     SLAM.SaveKeyFrameTrajectoryTUM("KeyFrameTrajectory.txt");
-    //zhanghao rgbd add tum traj and kitti traj
-    SLAM.SaveTrajectoryTUM("FrameTrajectory_TUM_Format.txt");
-    SLAM.SaveTrajectoryKITTI("FrameTrajectory_KITTI_Format.txt");
+    // SLAM.SaveTrajectoryTUM("FrameTrajectory_TUM_Format.txt");
+    // SLAM.SaveTrajectoryKITTI("FrameTrajectory_KITTI_Format.txt");
 
     ros::shutdown();
 
@@ -174,24 +180,24 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const senso
     }
 
     mpSLAM->TrackRGBD(cv_ptrRGB->image,cv_ptrD->image,cv_ptrRGB->header.stamp.toSec());
-    cv::Mat Tcw;
-    geometry_msgs::PoseStamped pose;
-    pose.header.stamp = ros::Time::now();
-    pose.header.frame_id = "path";
+    // cv::Mat Tcw;
+    // geometry_msgs::PoseStamped pose;
+    // pose.header.stamp = ros::Time::now();
+    // pose.header.frame_id = "path";
 
-    cv::Mat Rwc = Tcw.rowRange(0, 3).colRange(0, 3).t(); // Rotation information
-    cv::Mat twc = -Rwc * Tcw.rowRange(0, 3).col(3);      // translation information
-    vector<float> q = ORB_SLAM2::Converter::toQuaternion(Rwc);
+    // cv::Mat Rwc = Tcw.rowRange(0, 3).colRange(0, 3).t(); // Rotation information
+    // cv::Mat twc = -Rwc * Tcw.rowRange(0, 3).col(3);      // translation information
+    // vector<float> q = ORB_SLAM2::Converter::toQuaternion(Rwc);
 
-    tf::Transform new_transform;
-    new_transform.setOrigin(tf::Vector3(twc.at<float>(0, 0), twc.at<float>(0, 1), twc.at<float>(0, 2)));
-    tf::Quaternion quaternion(q[0], q[1], q[2], q[3]);
-    new_transform.setRotation(quaternion);
-    tf::poseTFToMsg(new_transform, pose.pose);
-    pose_pub.publish(pose);
+    // tf::Transform new_transform;
+    // new_transform.setOrigin(tf::Vector3(twc.at<float>(0, 0), twc.at<float>(0, 1), twc.at<float>(0, 2)));
+    // tf::Quaternion quaternion(q[0], q[1], q[2], q[3]);
+    // new_transform.setRotation(quaternion);
+    // tf::poseTFToMsg(new_transform, pose.pose);
+    // pose_pub.publish(pose);
 
-    rgbd_path.header.frame_id = "path";
-    rgbd_path.header.stamp = ros::Time::now();
-    rgbd_path.poses.push_back(pose);
-    rgbd_path_pub.publish(rgbd_path);
+    // rgbd_path.header.frame_id = "path";
+    // rgbd_path.header.stamp = ros::Time::now();
+    // rgbd_path.poses.push_back(pose);
+    // rgbd_path_pub.publish(rgbd_path);
 }

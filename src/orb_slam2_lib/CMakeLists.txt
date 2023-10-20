@@ -28,7 +28,7 @@ endif()
 
 add_subdirectory(Thirdparty/DBoW2)
 add_subdirectory(Thirdparty/g2o)
-
+# set(OpenCV_DIR "/home/slam007/app/opencv3.4.5/install/share/OpenCV")
 find_package(OpenCV REQUIRED)
 
 # eigen
@@ -73,6 +73,7 @@ set(SRCS
   src/KeyFrameDatabase.cc
   src/Sim3Solver.cc
   src/Initializer.cc
+  src/Object.cpp
 )
 
 set(LIBS

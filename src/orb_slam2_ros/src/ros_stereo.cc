@@ -47,6 +47,9 @@
 #include<tf/transform_broadcaster.h>
 #include"Converter.h"
 #include<nav_msgs/Path.h>
+// hayden darknet ros darknet_ros_msgs/BoundingBoxes sub
+#include <darknet_ros_msgs/BoundingBox.h>
+#include <darknet_ros_msgs/BoundingBoxes.h>
 
 using namespace std;
 
@@ -66,6 +69,15 @@ ros::Publisher pose_pub;
 nav_msgs::Path stereo_path;
 ros::Publisher stereo_path_pub;
 
+void personTrack(const darknet_ros_msgs::BoundingBoxes::ConstPtr &msg)
+{
+    double xmin = msg->bounding_boxes[0].xmin;
+    double ymin = msg->bounding_boxes[0].ymin;
+    double xmax = msg->bounding_boxes[0].xmax;
+    double ymax = msg->bounding_boxes[0].ymax;
+    std::cout << "I'm in PersonTracking callback" << std::endl;
+    std::cout << "xmin ymin xmax ymax" << xmin << " " << ymin << " " << xmax << " " << ymax << std::endl;
+}
 int main(int argc, char **argv)
 {
     
@@ -168,12 +180,11 @@ int main(int argc, char **argv)
 
     //nh is startup and shutdown of the internal node inside a roscpp program
     ros::NodeHandle nodeHandler;
+    ros::Subscriber sub = nodeHandler.subscribe("/darknet_ros/bounding_boxes", 10, personTrack);
 
     //set subscribed topics, names changed for ZED Topics
     message_filters::Subscriber<sensor_msgs::Image> left_sub(nodeHandler, "/left/image_rect_color", 1);
     message_filters::Subscriber<sensor_msgs::Image> right_sub(nodeHandler, "/right/image_rect_color", 1);
-    //message_filters::Subscriber<sensor_msgs::Image> left_sub(nh, "/camera/left/image_raw", 1);
-    //message_filters::Subscriber<sensor_msgs::Image> right_sub(nh, "camera/right/image_raw", 1);
 
     //a policy used by message_filters::sync::Synchronizer to match messages coming on a set of topics
     //can match messages even if they have different time stamps
@@ -247,6 +258,7 @@ void ImageGrabber::GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft,const se
     }
     else
     {
+        // hayden 返回得到一个4x4的矩阵信息，该矩阵包含了三个旋转分量以及三个平移分量。我们对该矩阵进行处理并发布出最后的位姿信息：
         cv::Mat Tcw;
         // hayden ORB_SLAM2中的位姿信息由下列函数返回，将其转换为所需的数据类型发布出去
         Tcw = mpSLAM->TrackStereo(cv_ptrLeft->image,cv_ptrRight->image,cv_ptrLeft->header.stamp.toSec());

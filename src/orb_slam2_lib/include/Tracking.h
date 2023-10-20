@@ -57,6 +57,19 @@ public:
     // Preprocess the input and call Track(). Extract features and performs stereo matching.
     cv::Mat GrabImageStereo(const cv::Mat &imRectLeft,const cv::Mat &imRectRight, const double &timestamp);
     cv::Mat GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const double &timestamp);
+    /**
+     * @brief 处理RGBD输入的图像
+     *
+     * @param[in] imRGB         彩色图像
+     * @param[in] imD           深度图像
+     * @param[in] timestamp     时间戳
+     * @return cv::Mat          世界坐标系到该帧相机坐标系的变换矩阵
+     */
+    cv::Mat GrabImageRGBD(const cv::Mat &imRGB,
+                          const cv::Mat &imD,
+                          const double &timestamp,
+                          const vector<std::pair<vector<double>, int>> &detect_result);
+
     cv::Mat GrabImageMonocular(const cv::Mat &im, const double &timestamp);
 
     void SetLocalMapper(LocalMapping* pLocalMapper);

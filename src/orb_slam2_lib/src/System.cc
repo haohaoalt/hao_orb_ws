@@ -234,62 +234,159 @@ void System::Start()
     mbStarted = true;
 }
 
-cv::Mat System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timestamp)
+// hayden 双目输入时的追踪器接口
+cv::Mat System::TrackStereo(const cv::Mat &imLeft,   // 左侧图像
+                            const cv::Mat &imRight,  // 右侧图像
+                            const double &timestamp) // 时间戳
 {
-    if(mSensor!=STEREO)
+    // 检查输入数据类型是否合法
+    if (mSensor != STEREO)
     {
+        // 不合法那就退出
         cerr << "ERROR: you called TrackStereo but input sensor was not set to STEREO." << endl;
         std::exit(-1);
     }
-
-    // Check mode change
+    // 检查是否有运行模式的改变
+    //  Check mode change
     {
+        // 互斥锁，以免mbActivateLocalizationMode、mbDeactivateLocalizationMode被修改
         unique_lock<mutex> lock(mMutexMode);
-        if(mbActivateLocalizationMode)
+        // 如果激活定位模式
+        if (mbActivateLocalizationMode)
         {
+            // 调用局部建图器的请求停止函数
             mpLocalMapper->RequestStop();
 
             // Wait until Local Mapping has effectively stopped
-            //mtLocalMapping.join();
-            while(!mpLocalMapper->isStopped())
+            // mtLocalMapping.join();
+            while (!mpLocalMapper->isStopped())
             {
                 std::this_thread::sleep_for(std::chrono::microseconds(1000));
             }
+            // 运行到这里的时候，局部建图部分就真正地停止了
+            // 告知追踪器，现在 只有追踪工作
 
-            mpTracker->InformOnlyTracking(true);
-            mbActivateLocalizationMode = false;
+            mpTracker->InformOnlyTracking(true); // 定位时，只跟踪
+            // 同时清除定位标记
+            mbActivateLocalizationMode = false; // 防止重复执行
         }
-        if(mbDeactivateLocalizationMode)
+        if (mbDeactivateLocalizationMode)
         {
+            // 如果取消定位模式
+            // 告知追踪器，现在地图构建部分也要开始工作了
             mpTracker->InformOnlyTracking(false);
+            // 局部建图器要开始工作呢
             mpLocalMapper->Release();
-            mbDeactivateLocalizationMode = false;
+            // 清楚标志
+            mbDeactivateLocalizationMode = false; // 防止重复执行
+        }                                         // 如果取消定位模式
+    }                                             // 检查是否有模式的改变
+
+    // Check reset 检查是否有复位的操作
+    {
+        // 上锁
+        unique_lock<mutex> lock(mMutexReset);
+        // 是否有复位请求？
+        if (mbReset)
+        {
+            // 有，追踪器复位
+            mpTracker->Reset();
+            // 清除标志
+            mbReset = false;
         }
     }
-
-    // Check reset
-    {
-
-    unique_lock<mutex> lock(mMutexReset);
-    if(mbReset)
-    {
-        mpTracker->Reset();
-        mbReset = false;
-    }
-    }
-
-    cv::Mat Tcw = mpTracker->GrabImageStereo(imLeft,imRight,timestamp);
-
+    // 用矩阵Tcw来保存估计的相机 位姿，运动追踪器的GrabImageStereo函数才是真正进行运动估计的函数
+    cv::Mat Tcw = mpTracker->GrabImageStereo(imLeft, imRight, timestamp);
+    // 给运动追踪状态上锁
     unique_lock<mutex> lock2(mMutexState);
+    // 获取运动追踪状态
     mTrackingState = mpTracker->mState;
+    // 获取当前帧追踪到的地图点向量指针
     mTrackedMapPoints = mpTracker->mCurrentFrame.mvpMapPoints;
+    // 获取当前帧追踪到的关键帧特征点向量的指针
     mTrackedKeyPointsUn = mpTracker->mCurrentFrame.mvKeysUn;
+    // 返回获得的相机运动估计
     return Tcw;
 }
 
+// hayden YOLO双目输入时的追踪器接口
+cv::Mat System::TrackStereo(const cv::Mat &imLeft,   // 左侧图像
+                                const cv::Mat &imRight,  // 右侧图像
+                                const double &timestamp, // 时间戳
+                                const vector<std::pair<vector<double>, int>> &detect_result)
+{
+    // 检查输入数据类型是否合法
+    if (mSensor != STEREO)
+    {
+        // 不合法那就退出
+        cerr << "ERROR: you called TrackStereo but input sensor was not set to STEREO." << endl;
+        std::exit(-1);
+    }
+    // 检查是否有运行模式的改变
+    //  Check mode change
+    {
+        // 互斥锁，以免mbActivateLocalizationMode、mbDeactivateLocalizationMode被修改
+        unique_lock<mutex> lock(mMutexMode);
+        // 如果激活定位模式
+        if (mbActivateLocalizationMode)
+        {
+            // 调用局部建图器的请求停止函数
+            mpLocalMapper->RequestStop();
+
+            // Wait until Local Mapping has effectively stopped
+            // mtLocalMapping.join();
+            while (!mpLocalMapper->isStopped())
+            {
+                std::this_thread::sleep_for(std::chrono::microseconds(1000));
+            }
+            // 运行到这里的时候，局部建图部分就真正地停止了
+            // 告知追踪器，现在 只有追踪工作
+
+            mpTracker->InformOnlyTracking(true); // 定位时，只跟踪
+            // 同时清除定位标记
+            mbActivateLocalizationMode = false; // 防止重复执行
+        }
+        if (mbDeactivateLocalizationMode)
+        {
+            // 如果取消定位模式
+            // 告知追踪器，现在地图构建部分也要开始工作了
+            mpTracker->InformOnlyTracking(false);
+            // 局部建图器要开始工作呢
+            mpLocalMapper->Release();
+            // 清楚标志
+            mbDeactivateLocalizationMode = false; // 防止重复执行
+        }                                         // 如果取消定位模式
+    }                                             // 检查是否有模式的改变
+
+    // Check reset 检查是否有复位的操作
+    {
+        // 上锁
+        unique_lock<mutex> lock(mMutexReset);
+        // 是否有复位请求？
+        if (mbReset)
+        {
+            // 有，追踪器复位
+            mpTracker->Reset();
+            // 清除标志
+            mbReset = false;
+        }
+    }
+    // 用矩阵Tcw来保存估计的相机 位姿，运动追踪器的GrabImageStereo函数才是真正进行运动估计的函数
+    cv::Mat Tcw = mpTracker->GrabImageStereo(imLeft, imRight, timestamp);
+    // 给运动追踪状态上锁
+    unique_lock<mutex> lock2(mMutexState);
+    // 获取运动追踪状态
+    mTrackingState = mpTracker->mState;
+    // 获取当前帧追踪到的地图点向量指针
+    mTrackedMapPoints = mpTracker->mCurrentFrame.mvpMapPoints;
+    // 获取当前帧追踪到的关键帧特征点向量的指针
+    mTrackedKeyPointsUn = mpTracker->mCurrentFrame.mvKeysUn;
+    // 返回获得的相机运动估计
+    return Tcw;
+}
 cv::Mat System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const double &timestamp)
 {
-    if(mSensor!=RGBD)
+    if (mSensor != RGBD)
     {
         cerr << "ERROR: you called TrackRGBD but input sensor was not set to RGBD." << endl;
         std::exit(-1);
@@ -298,17 +395,17 @@ cv::Mat System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const doub
     // Check mode change
     {
         unique_lock<mutex> lock(mMutexMode);
-        if(mbActivateLocalizationMode)
+        if (mbActivateLocalizationMode)
         {
             mpLocalMapper->RequestStop();
 
             // Wait until Local Mapping has effectively stopped
-            mtLocalMapping.join();
+            // mtLocalMapping.join();
 
             mpTracker->InformOnlyTracking(true);
             mbActivateLocalizationMode = false;
         }
-        if(mbDeactivateLocalizationMode)
+        if (mbDeactivateLocalizationMode)
         {
             mpTracker->InformOnlyTracking(false);
             mpLocalMapper->Release();
@@ -318,15 +415,14 @@ cv::Mat System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const doub
 
     // Check reset
     {
-    unique_lock<mutex> lock(mMutexReset);
-    if(mbReset)
-    {
-        mpTracker->Reset();
-        mbReset = false;
+        unique_lock<mutex> lock(mMutexReset);
+        if (mbReset)
+        {
+            mpTracker->Reset();
+            mbReset = false;
+        }
     }
-    }
-
-    cv::Mat Tcw = mpTracker->GrabImageRGBD(im,depthmap,timestamp);
+    cv::Mat Tcw = mpTracker->GrabImageRGBD(im, depthmap, timestamp);
 
     unique_lock<mutex> lock2(mMutexState);
     mTrackingState = mpTracker->mState;
@@ -334,7 +430,64 @@ cv::Mat System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const doub
     mTrackedKeyPointsUn = mpTracker->mCurrentFrame.mvKeysUn;
     return Tcw;
 }
+//  TODO: 添加参数const vector<std::pair<vector<double>, int>>& detect_result
+cv::Mat System::TrackRGBD(const cv::Mat &im,
+                              const cv::Mat &depthmap,
+                              const double &timestamp,
+                              const vector<std::pair<vector<double>, int>> &detect_result)
+{
+    // 判断输入数据类型是否合法
+    if (mSensor != RGBD)
+    {
+        cerr << "ERROR: you called TrackRGBD but input sensor was not set to RGBD." << endl;
+        exit(-1);
+    }
 
+    // Check mode change
+    // 检查模式改变
+    {
+        unique_lock<mutex> lock(mMutexMode);
+        if (mbActivateLocalizationMode)
+        {
+            mpLocalMapper->RequestStop();
+
+            // Wait until Local Mapping has effectively stopped
+            while (!mpLocalMapper->isStopped())
+            {
+                usleep(1000);
+            }
+
+            mpTracker->InformOnlyTracking(true);
+            mbActivateLocalizationMode = false;
+        }
+        if (mbDeactivateLocalizationMode)
+        {
+            mpTracker->InformOnlyTracking(false);
+            mpLocalMapper->Release();
+            mbDeactivateLocalizationMode = false;
+        }
+    }
+
+    // Check reset
+    // 检查是否有复位请求
+    {
+        unique_lock<mutex> lock(mMutexReset);
+        if (mbReset)
+        {
+            mpTracker->Reset();
+            mbReset = false;
+        }
+    }
+
+    // hayden  获得相机位姿的估计
+    cv::Mat Tcw = mpTracker->GrabImageRGBD(im, depthmap, timestamp, detect_result);
+
+    unique_lock<mutex> lock2(mMutexState);
+    mTrackingState = mpTracker->mState;
+    mTrackedMapPoints = mpTracker->mCurrentFrame.mvpMapPoints;
+    mTrackedKeyPointsUn = mpTracker->mCurrentFrame.mvKeysUn;
+    return Tcw;
+}
 cv::Mat System::TrackMonocular(const cv::Mat &im, const double &timestamp)
 {
     if(mSensor!=MONOCULAR)
