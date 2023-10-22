@@ -4,7 +4,7 @@
 
 <!-- setup arguments -->
 <!-- rosbag arguments -->
-<arg name="bag_data_path"   default="/media/slam007/Friday/Dataset/KITTI/kitti_raw/rosbag/g09_kitti_2011_09_30_drive_0033_synced.bag"/>
+<arg name="bag_data_path"   default="/media/slam007/Friday/Dataset/KITTI/kitti_raw/rosbag/g06_kitti_2011_09_30_drive_0020_synced.bag"/>
 
 
 <!-- ORBSLAM arguments -->

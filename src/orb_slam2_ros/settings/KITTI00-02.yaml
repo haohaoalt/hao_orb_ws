@@ -35,6 +35,10 @@ ThDepth: 35
 #--------------------------------------------------------------------------------------------
 
 # ORB Extractor: Number of features per image
+# ORB Extractor: Number of features per image
+#2000 to extract enough Keypoints per Keyframe in order to perform loop closure
+#1000 may fail to detect loops but offers better localization perfromance than 2000
+#because the saved map contains more Keyframes
 ORBextractor.nFeatures: 2000
 
 # ORB Extractor: Scale factor between levels in the scale pyramid

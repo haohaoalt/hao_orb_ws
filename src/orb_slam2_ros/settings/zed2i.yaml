@@ -5,37 +5,38 @@
 #--------------------------------------------------------------------------------------------
 
 # Camera calibration and distortion parameters (OpenCV)
-Camera.fx: 707.0912
-Camera.fy: 707.0912
-Camera.cx: 601.8873
-Camera.cy: 183.1104
+Camera.fx: 265.6521301269531
+Camera.fy: 265.6521301269531  
+Camera.cx: 338.9148254394531
+Camera.cy: 190.3455352783203
 
 Camera.k1: 0.0
 Camera.k2: 0.0
 Camera.p1: 0.0
 Camera.p2: 0.0
 
-Camera.width: 1226 # 1241
-Camera.height: 370     # 376
+Camera.width: 672
+Camera.height: 376
 
 # Camera frames per second
-Camera.fps: 10.0
+Camera.fps: 10.0 #30 for ZED, as defined in veh_rccar_parameters zed ros wrapper launch file
 
+# stereo baseline(in meters - for ZED = 0.12) times fx
 # stereo baseline times fx
-Camera.bf: 379.8145
+Camera.bf: 31.878
 
 # Color order of the images (0: BGR, 1: RGB. It is ignored if images are grayscale)
 Camera.RGB: 1
 
 # Close/Far threshold. Baseline times.
-ThDepth: 40
+ThDepth: 35
 
 #--------------------------------------------------------------------------------------------
 # ORB Parameters
 #--------------------------------------------------------------------------------------------
 
 # ORB Extractor: Number of features per image
-ORBextractor.nFeatures: 1500 #before 600
+ORBextractor.nFeatures: 2000
 
 # ORB Extractor: Scale factor between levels in the scale pyramid
 ORBextractor.scaleFactor: 1.2
@@ -47,8 +48,8 @@ ORBextractor.nLevels: 8
 # Image is divided in a grid. At each cell FAST are extracted imposing a minimum response.
 # Firstly we impose iniThFAST. If no corners are detected we impose a lower value minThFAST
 # You can lower these values if your images have low contrast
-ORBextractor.iniThFAST: 15
-ORBextractor.minThFAST: 6 #before 6
+ORBextractor.iniThFAST: 13 #before 15
+ORBextractor.minThFAST: 5 #before 6
 
 #--------------------------------------------------------------------------------------------
 # Viewer Parameters

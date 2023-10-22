@@ -38,7 +38,7 @@
   <arg name="octomap_enabled"   value="false"/>
 </include> -->
 <!-- TODO -->
-<arg name="orb_settings_file" default="$(find orb_slam2_ros)/settings/zed2i_load.yaml"/>
+<arg name="orb_settings_file" default="$(find orb_slam2_ros)/settings/zed2i_save.yaml"/>
 <!-- ORBSLAM2 with Ros -->
 <!-- Provide the correct settings .yaml file to specify camera parameters and ORB feature settings -->
 <node pkg="orb_slam2_ros" type="Stereo" name="orb_slam2" args="$(find orb_slam2_lib)/Vocabulary/ORBvoc.bin $(arg orb_settings_file) False" cwd="node" output="screen">
