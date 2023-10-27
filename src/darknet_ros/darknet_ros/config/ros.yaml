@@ -1,8 +1,8 @@
 subscribers:
 
   camera_reading:
-    topic: /kitti/camera_color_left/image_raw
-    # topic: /camera/rgb/image_color
+    # topic: /kitti/camera_color_left/image_raw
+    topic: /camera/color/image_raw
     queue_size: 1
 
 actions:
@@ -29,6 +29,6 @@ publishers:
 
 image_view:
 
-  enable_opencv: true
+  enable_opencv: false
   wait_key_delay: 1
   enable_console_output: true

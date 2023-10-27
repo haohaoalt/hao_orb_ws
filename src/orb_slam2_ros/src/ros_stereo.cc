@@ -197,7 +197,7 @@ int main(int argc, char **argv)
 
     //haoz add pose pub and stereo_path_pub
     pose_pub = nodeHandler.advertise<geometry_msgs::PoseStamped>("ORB_SLAM/pose",5);
-    stereo_path_pub = nodeHandler.advertise<nav_msgs::Path>("ORB_SLAM/path",10);
+    stereo_path_pub = nodeHandler.advertise<nav_msgs::Path>("/orbslam2/camera_path",10);
 
 
     clock_t tStart = clock();
@@ -264,7 +264,7 @@ void ImageGrabber::GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft,const se
         Tcw = mpSLAM->TrackStereo(cv_ptrLeft->image,cv_ptrRight->image,cv_ptrLeft->header.stamp.toSec());
         geometry_msgs::PoseStamped pose;
         pose.header.stamp = ros::Time::now();
-        pose.header.frame_id = "path";
+        pose.header.frame_id = "odom2";
 
         cv::Mat Rwc = Tcw.rowRange(0, 3).colRange(0, 3).t(); // Rotation information
         cv::Mat twc = -Rwc * Tcw.rowRange(0, 3).col(3);      // translation information
@@ -277,7 +277,7 @@ void ImageGrabber::GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft,const se
         tf::poseTFToMsg(new_transform, pose.pose);
         pose_pub.publish(pose);
 
-        stereo_path.header.frame_id = "path";
+        stereo_path.header.frame_id = "odom2";
         stereo_path.header.stamp = ros::Time::now();
         stereo_path.poses.push_back(pose);
         stereo_path_pub.publish(stereo_path);

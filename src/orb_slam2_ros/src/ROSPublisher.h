@@ -1,7 +1,3 @@
-//
-// Created by sebastiano on 8/18/16.
-//
-
 #ifndef ORB_SLAM2_ROSPUBLISHER_H
 #define ORB_SLAM2_ROSPUBLISHER_H
 
@@ -35,7 +31,7 @@ namespace ORB_SLAM2
 }
 
 class ROSPublisher :
-        //Mehrfache Vererbung
+    // Mehrfache Vererbung
     public ORB_SLAM2::IPublisherThread,
     public ORB_SLAM2::IMapPublisher,
     public ORB_SLAM2::IFrameSubscriber
@@ -45,16 +41,16 @@ public:
     static constexpr const char *DEFAULT_MAP_FRAME_ADJUSTED = "odom2";
     static constexpr const char *DEFAULT_CAMERA_FRAME = "orb_slam2/camera"; // this is the trajectory guess of the ORB-SLAM2, visualize it in RViz to see trajectory of camera
     static constexpr const char *DEFAULT_BASE_FRAME = "base_link";
-    //static constexpr const char *DEFAULT_BASE_FRAME = "rear_axis_middle_ground";
+    // static constexpr const char *DEFAULT_BASE_FRAME = "rear_axis_middle_ground";
     static constexpr const float DEFAULT_OCTOMAP_RESOLUTION = 0.02; // defines resolution of octomap
-    static constexpr const float ORBSTATE_REPUBLISH_RATE = 20;    // re-publish state @ 20 Hz
-    static constexpr const float PROJECTION_MIN_HEIGHT = -0.1; //-10; // minimal voxel-z to consider in projected map
-    static constexpr const float GRADIENT_MAX_HEIGHT = 0.;        // maximal voxel-z to consider in gradient-based projection
-    static constexpr const int   GRADIENT_NB_EROSIONS = 1;        // number of erosions performed before computing gradients
-    static constexpr const float GRADIENT_LOW_SLOPE = M_PI / 4.;  // lower bound for a slope being considered obstacle-ish
-    static constexpr const float GRADIENT_HIGH_SLOPE = M_PI / 3.; // lower bound for a slope being considered a full solid obstacle
-    static constexpr const float OCTOMAP_RATE = 1;                // rate of octomap cycles (integrate MapPoints and publish)
-    static constexpr const bool  OCTOMAP_REBUILD = false;         // clear octomap when tracking is lost and rebuild
+    static constexpr const float ORBSTATE_REPUBLISH_RATE = 20;      // re-publish state @ 20 Hz
+    static constexpr const float PROJECTION_MIN_HEIGHT = -0.1;      //-10; // minimal voxel-z to consider in projected map
+    static constexpr const float GRADIENT_MAX_HEIGHT = 0.;          // maximal voxel-z to consider in gradient-based projection
+    static constexpr const int GRADIENT_NB_EROSIONS = 1;            // number of erosions performed before computing gradients
+    static constexpr const float GRADIENT_LOW_SLOPE = M_PI / 4.;    // lower bound for a slope being considered obstacle-ish
+    static constexpr const float GRADIENT_HIGH_SLOPE = M_PI / 3.;   // lower bound for a slope being considered a full solid obstacle
+    static constexpr const float OCTOMAP_RATE = 1;                  // rate of octomap cycles (integrate MapPoints and publish)
+    static constexpr const bool OCTOMAP_REBUILD = false;            // clear octomap when tracking is lost and rebuild
 
     // `frequency` is max amount of messages emitted per second
     explicit ROSPublisher(
@@ -63,9 +59,9 @@ public:
         bool bReuseMap_ = false,
         ros::NodeHandle nh = ros::NodeHandle());
 
-    //Hier wird Run() Methode überschrieben (davor Run()=0)
+    // Hier wird Run() Methode überschrieben (davor Run()=0)
     virtual void Run() override;
-    virtual void Update(ORB_SLAM2::Tracking*);
+    virtual void Update(ORB_SLAM2::Tracking *);
 
 protected:
     bool WaitCycleStart();
@@ -109,20 +105,19 @@ private:
 
     tf::TransformListener tf_listener_;
 
-
     void stashMapPoints(bool all_map_points = false);
     void octomapWorker();
 
-
     void updateOctoMap();
-    void integrateMapPoints(const std::vector<ORB_SLAM2::MapPoint*> &, const octomap::point3d &, const octomap::pose6d &, octomap::OcTree &);
+    void integrateMapPoints(const std::vector<ORB_SLAM2::MapPoint *> &, const octomap::point3d &, const octomap::pose6d &, octomap::OcTree &);
 
-    void octomapCutToOccupancyGrid(const octomap::OcTree& octree, nav_msgs::OccupancyGrid& map){
-        octomapCutToOccupancyGrid(octree, map, -1.0*std::numeric_limits<double>::max(), std::numeric_limits<double>::max());
+    void octomapCutToOccupancyGrid(const octomap::OcTree &octree, nav_msgs::OccupancyGrid &map)
+    {
+        octomapCutToOccupancyGrid(octree, map, -1.0 * std::numeric_limits<double>::max(), std::numeric_limits<double>::max());
     }
-    void octomapCutToOccupancyGrid(const octomap::OcTree& octree, nav_msgs::OccupancyGrid& map, const double minZ_, const double maxZ_ );
+    void octomapCutToOccupancyGrid(const octomap::OcTree &octree, nav_msgs::OccupancyGrid &map, const double minZ_, const double maxZ_);
 
-    void octomapGradientToOccupancyGrid(const octomap::OcTree& octree, nav_msgs::OccupancyGrid& map, float max_height = GRADIENT_MAX_HEIGHT, int nb_erosions = GRADIENT_NB_EROSIONS, float low_slope = GRADIENT_LOW_SLOPE, float high_slope = GRADIENT_HIGH_SLOPE);
+    void octomapGradientToOccupancyGrid(const octomap::OcTree &octree, nav_msgs::OccupancyGrid &map, float max_height = GRADIENT_MAX_HEIGHT, int nb_erosions = GRADIENT_NB_EROSIONS, float low_slope = GRADIENT_LOW_SLOPE, float high_slope = GRADIENT_HIGH_SLOPE);
 
     void publishMap();
     void publishMapUpdates();
@@ -140,15 +135,14 @@ private:
     void publishOdom(tf::Quaternion orientation);
     int queue_size_;
     tf::TransformListener transformer;
-
 };
 
-
-//ROSSystemBuilder erbt von GernericBuilder def. in System.cc
-class ROSSystemBuilder : public ORB_SLAM2::System::GenericBuilder {
+// ROSSystemBuilder erbt von GernericBuilder def. in System.cc
+class ROSSystemBuilder : public ORB_SLAM2::System::GenericBuilder
+{
 public:
-    ROSSystemBuilder(const std::string& strVocFile,
-                     const std::string& strSettingsFile,
+    ROSSystemBuilder(const std::string &strVocFile,
+                     const std::string &strSettingsFile,
                      ORB_SLAM2::System::eSensor sensor,
                      double frequency,
                      ros::NodeHandle nh = ros::NodeHandle(),
@@ -156,11 +150,10 @@ public:
                      std::string camera_frame = ROSPublisher::DEFAULT_CAMERA_FRAME);
     virtual ~ROSSystemBuilder();
 
-    virtual ORB_SLAM2::IPublisherThread* GetPublisher() override;
+    virtual ORB_SLAM2::IPublisherThread *GetPublisher() override;
 
 private:
     std::unique_ptr<ROSPublisher> mpPublisher;
 };
 
-
-#endif //ORB_SLAM2_ROSPUBLISHER_H
+#endif // ORB_SLAM2_ROSPUBLISHER_H

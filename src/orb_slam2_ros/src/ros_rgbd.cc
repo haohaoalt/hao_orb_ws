@@ -119,7 +119,7 @@ int main(int argc, char **argv)
     ImageGrabber igb(&SLAM);
     ros::NodeHandle nodeHandler;
     ros::Subscriber sub = nodeHandler.subscribe("/darknet_ros/bounding_boxes", 10, personTrack);
-
+    //hayden orbslam2 rgbd subscribe topic
     message_filters::Subscriber<sensor_msgs::Image> rgb_sub(nodeHandler, "/camera/color/image_raw", 1);
     message_filters::Subscriber<sensor_msgs::Image> depth_sub(nodeHandler, "/camera/aligned_depth_to_color/image_raw", 1);
     typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> sync_pol;
@@ -129,8 +129,7 @@ int main(int argc, char **argv)
 
     //haoz add pose pub and stereo_path_pub
     pose_pub = nodeHandler.advertise<geometry_msgs::PoseStamped>("ORB_SLAM/pose",5);
-    rgbd_path_pub = nodeHandler.advertise<nav_msgs::Path>("ORB_SLAM/path",10);
-
+    rgbd_path_pub = nodeHandler.advertise<nav_msgs::Path>("/orbslam2/camera_path", 10);
 
     clock_t tStart = clock();
     SLAM.Start();
@@ -183,7 +182,7 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const senso
 
     geometry_msgs::PoseStamped pose;
     pose.header.stamp = ros::Time::now();
-    pose.header.frame_id = "path";
+    pose.header.frame_id = "odom2";
 
     cv::Mat Rwc = Tcw.rowRange(0, 3).colRange(0, 3).t(); // Rotation information
     cv::Mat twc = -Rwc * Tcw.rowRange(0, 3).col(3);      // translation information
@@ -196,7 +195,7 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const senso
     tf::poseTFToMsg(new_transform, pose.pose);
     pose_pub.publish(pose);
 
-    rgbd_path.header.frame_id = "path";
+    rgbd_path.header.frame_id = "odom2";
     rgbd_path.header.stamp = ros::Time::now();
     rgbd_path.poses.push_back(pose);
     rgbd_path_pub.publish(rgbd_path);

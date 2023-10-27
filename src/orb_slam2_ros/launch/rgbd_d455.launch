@@ -1,13 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
 
+<!-- rosbag arguments -->
+<arg name="bag_data_path" default="/media/slam007/Friday/Dataset/Realsence/rgbd/d455/1026d455.bag"/>
+
 <!-- ORBSLAM arguments -->
 <arg name="octomap_enabled"         		default="true"/>
 
 <!-- feature visualizer arguments -->
 <arg name="visualize_orb_features"          default="true"/>
 
-<arg name="orb_settings_file" default="$(find orb_slam2_ros)/settings/orb_ros_rgbd_save.yaml"/>
+<!-- orb_settings_file arguments -->
+<arg name="orb_settings_file" default="$(find orb_slam2_ros)/settings/rgbd_d455.yaml"/>
+
+<!-- rosbag replay-->
+<param name="use_sim_time" value="true"/>
+<!-- 
+  从10秒开始播放：rosbag play -s 10 xx.bag 
+  仅播放前十秒：rosbag play -u 10 xx.bag
+  从120s开始播放，只播放20s，就是播放120s~140s的时间段： rosbag play xx.bag -s 120 -u 20
+  -->
+<node pkg="rosbag" type="play" name="player" output="screen" args="$(arg bag_data_path) --clock --pause -r 0.8">
+  <!-- <remap from="/camera/color/image_raw" to="/camera/rgb/image_raw"/>
+  <remap from="/camera/depth/image_rect_raw" to="/camera/depth_registered/image_raw"/> -->
+</node>
 
 <!-- ORBSLAM2 with Ros -->
 <!-- Provide the correct settings .yaml file to specify camera parameters and ORB feature settings -->
@@ -22,7 +38,12 @@
   <param name="occupancy_gradient_high_slope" value="0.5"/>
 </node>
 
-<node pkg="rqt_image_view" type="rqt_image_view" name="rqt_image_view" args="image:=/orb_slam2/frame" if="$(arg visualize_orb_features)"/>
+<!-- rqt_image_view for visualization of extracted ORB featues in camera frame
+<node pkg="rqt_image_view" type="rqt_image_view" name="rqt_image_view" args="image:=/orb_slam2/frame" if="$(arg visualize_orb_features)"/> -->
+
+<!-- 在rviz中显示-->
+<node name="rviz" pkg="rviz" type="rviz" args="-d $(find orb_slam2_ros)/rviz/orb2-map-rgbd-d455.rviz" required="true" />
+
 
 
 </launch>
