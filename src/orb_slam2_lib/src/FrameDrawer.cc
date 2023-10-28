@@ -63,7 +63,9 @@ cv::Mat FrameDrawer::DrawFrame()
         }
         else if(mState==Tracking::OK)
         {
+            // 当系统处于运动追踪状态时
             vCurrentKeys = mvCurrentKeys;
+            // mvbMap当前帧的特征点在地图中是否出现;mvbVO是表示地图中没有出现,但是在当前帧中是第一次被观测得到的点
             vbVO = mvbVO;
             vbMap = mvbMap;
         }
@@ -90,12 +92,14 @@ cv::Mat FrameDrawer::DrawFrame()
     }
     else if(state==Tracking::OK) //TRACKING
     {
+        // 当前帧追踪到的特征点计数
         mnTracked=0;
         mnTrackedVO=0;
         const float r = 5;
         const int n = vCurrentKeys.size();
         for(int i=0;i<n;i++)
         {
+            // 如果这个点在视觉里程计中有(应该是追踪成功了的意思吧),在局部地图中也有
             if(vbVO[i] || vbMap[i])
             {
                 cv::Point2f pt1,pt2;
@@ -104,23 +108,63 @@ cv::Mat FrameDrawer::DrawFrame()
                 pt2.x=vCurrentKeys[i].pt.x+r;
                 pt2.y=vCurrentKeys[i].pt.y+r;
 
-                // This is a match to a MapPoint in the map
-                if(vbMap[i])
+                // hayden: Add 绘制物体框in FrameDrawer
+                // std::cout << objects_curFD.size() << "objects_curFD.size() " << std::endl;
+                for (int k = 0; k < objects_curFD.size(); ++k)
                 {
-                    cv::rectangle(im,pt1,pt2,cv::Scalar(0,255,0));
-                    cv::circle(im,vCurrentKeys[i].pt,2,cv::Scalar(0,255,0),-1);
+                    // cout << "k is " << k << endl;
+                    if (objects_curFD[k]->ndetect_class == 3)
+                    {
+                        // std::cout << "I'm in objects_curFD[k]->ndetect_class == 3" << std::endl;
+                        cv::Point pt11, pt22;
+                        pt11 = cv::Point(objects_curFD[k]->vdetect_parameter[0], objects_curFD[k]->vdetect_parameter[1]);
+                        pt22 = cv::Point(objects_curFD[k]->vdetect_parameter[2], objects_curFD[k]->vdetect_parameter[3]);
+                        cv::rectangle(im, pt11, pt22, cv::Scalar(0, 200, 200), 2);
+                    }
+
+                    if (objects_curFD[k]->ndetect_class == 1)
+                    {
+                        cv::Point pt11, pt22;
+                        pt11 = cv::Point(objects_curFD[k]->vdetect_parameter[0], objects_curFD[k]->vdetect_parameter[1]);
+                        pt22 = cv::Point(objects_curFD[k]->vdetect_parameter[2], objects_curFD[k]->vdetect_parameter[3]);
+                        cv::rectangle(im, pt11, pt22, cv::Scalar(200, 0, 100), 2);
+                    }
+                }
+                // hayden: End 绘制物体框in FrameDrawer
+
+                // This is a match to a MapPoint in the map
+                // if(vbMap[i])
+                // {
+                //     cv::rectangle(im,pt1,pt2,cv::Scalar(0,255,0));
+                //     cv::circle(im,vCurrentKeys[i].pt,2,cv::Scalar(0,255,0),-1);
+                //     mnTracked++;
+                // }
+                // else // This is match to a "visual odometry" MapPoint created in the last frame
+                // {
+                //     cv::rectangle(im,pt1,pt2,cv::Scalar(255,0,0));
+                //     cv::circle(im,vCurrentKeys[i].pt,2,cv::Scalar(255,0,0),-1);
+                //     mnTrackedVO++;
+                // }
+                // hayden TODO Begin 把位于动态物体框内的特征点标红
+                if (vbInDynamic_mvKeys[i])
+                { // 把位于动态物体框内的特征点标红
+                    std::cout << "把位于动态物体框内的特征点标红" << std::endl;
+                    cv::rectangle(im, pt1, pt2, cv::Scalar(0, 0, 200));
+                    cv::circle(im, vCurrentKeys[i].pt, 1, cv::Scalar(0, 0, 200), -1);
                     mnTracked++;
                 }
-                else // This is match to a "visual odometry" MapPoint created in the last frame
+                else
                 {
-                    cv::rectangle(im,pt1,pt2,cv::Scalar(255,0,0));
-                    cv::circle(im,vCurrentKeys[i].pt,2,cv::Scalar(255,0,0),-1);
-                    mnTrackedVO++;
+                    cv::rectangle(im, pt1, pt2, cv::Scalar(0, 255, 0));
+                    cv::circle(im, vCurrentKeys[i].pt, 1, cv::Scalar(0, 255, 0), -1);
+                    mnTracked++;
                 }
+                // hayden TODO End把位于动态物体框内的特征点标红
             }
         }
     }
 
+    // 然后写入状态栏的信息
     cv::Mat imWithInfo;
     DrawTextInfo(im,state, imWithInfo);
 
@@ -169,19 +213,29 @@ void FrameDrawer::DrawTextInfo(cv::Mat &im, int nState, cv::Mat &imText)
 void FrameDrawer::Update(Tracking *pTracker)
 {
     unique_lock<mutex> lock(mMutex);
+
+    //hayden: Add for yolo in FrameDrawer
+    objects_curFD = pTracker->mCurrentFrame.objects_cur_;
+    vbInDynamic_mvKeys = pTracker->mCurrentFrame.vbInDynamic_mvKeys;
+    // hayden End Add for FrameDrawer::Update
+
+    // 拷贝跟踪线程的图像
     pTracker->mImGray.copyTo(mIm);
+
+    // 拷贝跟踪线程的特征点
     mvCurrentKeys=pTracker->mCurrentFrame.mvKeys;
     N = mvCurrentKeys.size();
     mvbVO = vector<bool>(N,false);
     mvbMap = vector<bool>(N,false);
     mbOnlyTracking = pTracker->mbOnlyTracking;
 
-
+    // 如果上一帧的时候,追踪器没有进行初始
     if(pTracker->mLastProcessedState==Tracking::NOT_INITIALIZED)
     {
         mvIniKeys=pTracker->mInitialFrame.mvKeys;
         mvIniMatches=pTracker->mvIniMatches;
     }
+    // 如果上一帧是在正常跟踪
     else if(pTracker->mLastProcessedState==Tracking::OK)
     {
         for(int i=0;i<N;i++)

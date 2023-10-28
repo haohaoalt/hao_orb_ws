@@ -100,7 +100,7 @@ cv::Mat computeCameraTransform(const cv::Mat &Twc)
 sensor_msgs::PointCloud2 convertToPCL2(const std::vector<MapPoint *> &map_points)
 {
     const std::size_t n_map_points = map_points.size();
-    ROS_INFO("sending PointCloud (%lu points)", n_map_points);
+    // ROS_INFO("sending PointCloud (%lu points)", n_map_points);
 
     // Kind of a hack, but there aren't much better ways to avoid a copy
     struct point

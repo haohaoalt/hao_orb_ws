@@ -1,28 +1,39 @@
+/*
+ * @Author: https://github.com/haohaoalt
+ * @Date: 2023-10-26 15:10:38
+ * @LastEditors: haohaoalt haohaoalt@163.com
+ * @LastEditTime: 2023-10-28 16:25:19
+ * @FilePath: /hao_orb_ws/src/orb_slam2_lib/include/Map.h
+ * @Description:
+ * Copyright (c) 2023 by haohaoalt@163.com, All Rights Reserved.
+ */
 /**
-* This file is part of ORB-SLAM2.
-*
-* Copyright (C) 2014-2016 Raúl Mur-Artal <raulmur at unizar dot es> (University of Zaragoza)
-* For more information see <https://github.com/raulmur/ORB_SLAM2>
-*
-* ORB-SLAM2 is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, either version 3 of the License, or
-* (at your option) any later version.
-*
-* ORB-SLAM2 is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with ORB-SLAM2. If not, see <http://www.gnu.org/licenses/>.
-*/
+ * This file is part of ORB-SLAM2.
+ *
+ * Copyright (C) 2014-2016 Raúl Mur-Artal <raulmur at unizar dot es> (University of Zaragoza)
+ * For more information see <https://github.com/raulmur/ORB_SLAM2>
+ *
+ * ORB-SLAM2 is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * ORB-SLAM2 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with ORB-SLAM2. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #ifndef MAP_H
 #define MAP_H
 
 #include "MapPoint.h"
 #include "KeyFrame.h"
+
+#include "Frame.h"
 #include "Serialize.h"
 #include <set>
 #include <mutex>
@@ -30,61 +41,156 @@
 namespace ORB_SLAM2
 {
 
-class MapPoint;
-class KeyFrame;
+    class Frame;
+    class MapPoint;
+    class KeyFrame;
 
-class Map
-{
-public:
-    Map();
+    class Map
+    {
+    public:
+        /** @brief 构造函数 */
+        Map();
 
-    void AddKeyFrame(KeyFrame* pKF);
-    void AddMapPoint(MapPoint* pMP);
-    void EraseMapPoint(MapPoint* pMP);
-    void EraseKeyFrame(KeyFrame* pKF);
-    void SetReferenceMapPoints(const std::vector<MapPoint*> &vpMPs);
-    void InformNewBigChange();
-    int GetLastBigChangeIdx();
+        /**
+         * @brief 向地图中添加关键帧
+         *
+         * @param[in] pKF 关键帧
+         */
 
-    std::vector<KeyFrame*> GetAllKeyFrames();
-    std::vector<MapPoint*> GetAllMapPoints();
-    std::vector<MapPoint*> GetReferenceMapPoints();
+        void AddKeyFrame(KeyFrame *pKF);
 
-    long unsigned int MapPointsInMap();
-    long unsigned  KeyFramesInMap();
+        /**
+         * @brief 向地图中添加地图点
+         *
+         * @param[in] pMP 地图点
+         */
+        void AddMapPoint(MapPoint *pMP);
 
-    long unsigned int GetMaxKFid();
+        /**
+         * @brief 从地图中擦除地图点
+         *
+         * @param[in] pMP 地图点
+         */
+        void EraseMapPoint(MapPoint *pMP);
 
-    void clear();
+        /**
+         * @brief 从地图中删除关键帧
+         * @detials 实际上这个函数中目前仅仅是删除了在std::set中保存的地图点的指针,并且删除后
+         * 之前的地图点所占用的内存其实并没有得到释放
+         * @param[in] pKF 关键帧
+         */
+        void EraseKeyFrame(KeyFrame *pKF);
 
-    vector<KeyFrame*> mvpKeyFrameOrigins;
+        /**
+         * @brief 设置参考地图点
+         * @detials 一般是指,设置当前帧中的参考地图点; 这些点将用于DrawMapPoints函数画图
+         *
+         * @param[in] vpMPs 地图点们
+         */
+        void SetReferenceMapPoints(const std::vector<MapPoint *> &vpMPs);
 
-    std::mutex mMutexMapUpdate;
+        /**
+         * @brief 这个函数好像没有被用到过
+         */
+        void InformNewBigChange();
 
-    // This avoid that two points are created simultaneously in separate threads (id conflict)
-    std::mutex mMutexPointCreation;
+        /**
+         * @brief 获取最大改变;但是这个函数最终好像并没有被使用到
+         *
+         * @return int
+         */
+        int GetLastBigChangeIdx();
 
-private:
-    //give boost::serial::access access to all private
-    //and protected members of the Map class
-    friend class boost::serialization::access;
-    template<class Archive>
-    void serialize(Archive &ar, const unsigned int version);
+        /**
+         * @brief 获取地图中的所有关键帧
+         *
+         * @return std::vector<KeyFrame*> 获得的关键帧序列
+         */
+        std::vector<KeyFrame *> GetAllKeyFrames();
 
-protected:
-    std::set<MapPoint*> mspMapPoints;
-    std::set<KeyFrame*> mspKeyFrames;
+        /**
+         * @brief 获取地图中的所有地图点
+         *
+         * @return std::vector<MapPoint*> 获得的地图点序列
+         */
+        std::vector<MapPoint *> GetAllMapPoints();
 
-    std::vector<MapPoint*> mvpReferenceMapPoints;
+        /**
+         * @brief 获取地图中的所有参考地图点
+         *
+         * @return std::vector<MapPoint*> 获得的参考地图点序列
+         */
+        std::vector<MapPoint *> GetReferenceMapPoints();
 
-    long unsigned int mnMaxKFid;
+        /**
+         * @brief 获得当前地图中的地图点个数
+         *
+         * @return long unsigned int 个数
+         */
+        long unsigned int MapPointsInMap();
 
-    // Index related to a big change in the map (loop closure, global BA)
-    int mnBigChangeIdx;
+        /**
+         * @brief 获取当前地图中的关键帧个数
+         *
+         * @return long unsigned 关键帧个数
+         */
+        long unsigned KeyFramesInMap();
 
-    std::mutex mMutexMap;
-};
+        /**
+         * @brief 获取关键帧的最大id
+         *
+         * @return long unsigned int  id
+         */
+        long unsigned int GetMaxKFid();
 
-} //namespace ORB_SLAM
+        /** @brief 清空地图 */
+        void clear();
+
+        // hayden: Add func in Map.h
+        void AddObjCenters(MapPoint *pMP);
+
+        void EraseAllObjCenters();
+
+        vector<MapPoint *> GetAllObjCenters();
+
+        // 保存了最初始的关键帧
+        vector<KeyFrame *> mvpKeyFrameOrigins;
+
+        // 当更新地图时的互斥量.回环检测中和局部BA后更新全局地图的时候会用到这个
+        std::mutex mMutexMapUpdate;
+
+        // This avoid that two points are created simultaneously in separate threads (id conflict)
+        /// 为了避免地图点id冲突设计的互斥量
+        //? 如果插入的地图点id不同,但是由于误差等原因,产生的地图点非常相近,这个时候怎么处理?
+        std::mutex mMutexPointCreation;
+
+        std::set<MapPoint *> mspObjCenters;
+
+    private:
+        // give boost::serial::access access to all private
+        // and protected members of the Map class
+        friend class boost::serialization::access;
+        template <class Archive>
+        void serialize(Archive &ar, const unsigned int version);
+
+    protected:
+        // 存储所有的地图点
+        std::set<MapPoint *> mspMapPoints;
+        // 存储所有的关键帧
+        std::set<KeyFrame *> mspKeyFrames;
+        // 参考地图点
+        std::vector<MapPoint *> mvpReferenceMapPoints;
+
+        // 当前地图中具有最大ID的关键帧
+        long unsigned int mnMaxKFid;
+
+        // Index related to a big change in the map (loop closure, global BA)
+        int mnBigChangeIdx;
+
+        // 类的成员函数在对类成员变量进行操作的时候,防止冲突的互斥量
+        std::mutex mMutexMap;
+    };
+
+} // namespace ORB_SLAM
 
 #endif // MAP_H

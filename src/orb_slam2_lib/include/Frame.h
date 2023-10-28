@@ -82,6 +82,7 @@ public:
 
     // Constructor for RGB-D cameras.
     Frame(const cv::Mat &imGray, const cv::Mat &imDepth, const double &timeStamp, ORBextractor* extractor,ORBVocabulary* voc, cv::Mat &K, cv::Mat &distCoef, const float &bf, const float &thDepth);
+
     /**
      * @brief 为RGBD相机准备的帧构造函数
      *
@@ -155,6 +156,9 @@ public:
      * @return cv::Mat  反投影后得到的特征点的反投影点的世界坐标
      */
     cv::Mat UnprojectStereo(const int &i);
+
+    // 反投影物体中心点
+    void UnprojectObjectCenter(const int &box_id, const cv::Mat &imDepth);
     //*************
     // 判断特征点是否在物体框内
     bool IsInBox(const int &i, int &box_id);
@@ -260,8 +264,10 @@ public:
     vector<float> mvInvScaleFactors;
     vector<float> mvLevelSigma2;
     vector<float> mvInvLevelSigma2;
-    //*******
-    // vector<std::shared_ptr<Object>> objects_cur_detect_;//用于光流的物体
+
+    // hayden matches_in_box in Frame.h
+    cv::Mat imDepth;
+    //  vector<std::shared_ptr<Object>> objects_cur_detect_;//用于光流的物体
     vector<std::shared_ptr<Object>> objects_cur_; // 存储帧中的object
     map<int, int> matches_out_box;                // 在物体框外的匹配点
 
@@ -274,8 +280,15 @@ public:
     vector<bool> vbInDynamic_mvKeys; // 位于动态物体区域内的特征点(未做动态检验)
     // vector<bool> vbInStatic_mvKeys;
     std::vector<cv::KeyPoint> mvKeys_after;
+    
+    vector<cv::Mat> vMcenter_static;
 
     // Undistorted Image Bounds (computed once).
+    /**
+     * @name 用于确定画格子时的边界
+     * @note（未校正图像的边界，只需要计算一次，因为是类的静态成员变量）
+     * @{
+     */
     static float mnMinX;
     static float mnMaxX;
     static float mnMinY;

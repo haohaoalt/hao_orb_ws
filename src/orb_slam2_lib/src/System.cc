@@ -452,10 +452,11 @@ cv::Mat System::TrackRGBD(const cv::Mat &im,
             mpLocalMapper->RequestStop();
 
             // Wait until Local Mapping has effectively stopped
-            while (!mpLocalMapper->isStopped())
-            {
-                usleep(1000);
-            }
+            //hayden unknown note
+            // while (!mpLocalMapper->isStopped())
+            // {
+            //     usleep(1000);
+            // }
 
             mpTracker->InformOnlyTracking(true);
             mbActivateLocalizationMode = false;
@@ -586,25 +587,32 @@ void System::Shutdown()
     if (!bUseSavedMap && is_save_map)
         SaveMap(mapfile);
 }
-//zhanghao 保存轨迹SaveTrajectoryTUM
+//hayden 保存轨迹SaveTrajectoryTUM
 void System::SaveTrajectoryTUM(const string &filename)
 {
     cout << endl << "Saving camera trajectory to " << filename << " ..." << endl;
+    // 只有在传感器为双目或者RGBD时才可以工作
     if(mSensor==MONOCULAR)
     {
         cerr << "ERROR: SaveTrajectoryTUM cannot be used for monocular." << endl;
         return;
     }
 
+    // 从地图中获取所有的关键帧
     vector<KeyFrame*> vpKFs = mpMap->GetAllKeyFrames();
+
+    // 根据关键帧生成的先后顺序（id）进行排序
     sort(vpKFs.begin(),vpKFs.end(),KeyFrame::lId);
 
     // Transform all keyframes so that the first keyframe is at the origin.
     // After a loop closure the first keyframe might not be at the origin.
+    // 到原点的转换，获取这个转换矩阵
     cv::Mat Two = vpKFs[0]->GetPoseInverse();
 
+    // 文件写入的准备工作
     ofstream f;
-    f.open(filename.c_str());
+    // hayden 可以理解为，在输出浮点数的时候使用0.3141592654这样的方式而不是使用科学计数法
+    f.open(filename.c_str()); 
     f << fixed;
 
     // Frame pose is stored relative to its reference keyframe (which is optimized by BA and pose graph).
