@@ -154,13 +154,14 @@ int main(int argc, char **argv)
     const double freq = 100.0;
     // Set up a namespace for topics
     ros::NodeHandle nh("/orb_slam2");
-    ros::Subscriber sub = nh.subscribe("/darknet_ros/bounding_boxes", 10, personTrack);
+    // ros::Subscriber sub = nh.subscribe("/darknet_ros/bounding_boxes", 10, personTrack);
     ORB_SLAM2::System SLAM(make_unique<ROSSystemBuilder>(argv[1], argv[2], ORB_SLAM2::System::RGBD, freq, nh));
     ImageGrabber igb(&SLAM);
- 
-    // hayden orbslam2 rgbd subscribe topic
-    message_filters::Subscriber<sensor_msgs::Image> rgb_sub(nh, "/camera/color/image_raw", 1);
-    message_filters::Subscriber<sensor_msgs::Image> depth_sub(nh, "/camera/aligned_depth_to_color/image_raw", 1);
+    ros::NodeHandle nodeHandler;
+    ros::Subscriber sub = nodeHandler.subscribe("/darknet_ros/bounding_boxes", 10, personTrack);
+    //hayden orbslam2 rgbd subscribe topic
+    message_filters::Subscriber<sensor_msgs::Image> rgb_sub(nodeHandler, "/camera/rgb/image_color", 1);
+    message_filters::Subscriber<sensor_msgs::Image> depth_sub(nodeHandler, "/camera/depth/image", 1);
     typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> sync_pol;
     message_filters::Synchronizer<sync_pol> sync(sync_pol(10), rgb_sub, depth_sub);
 
