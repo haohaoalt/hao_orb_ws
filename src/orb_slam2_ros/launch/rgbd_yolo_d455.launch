@@ -27,7 +27,7 @@
 
 <!-- ORBSLAM2 with Ros -->
 <!-- Provide the correct settings .yaml file to specify camera parameters and ORB feature settings -->
-<node pkg="orb_slam2_ros" type="RGBD" name="orb_slam2" args="$(find orb_slam2_lib)/Vocabulary/ORBvoc.bin $(arg orb_settings_file)" cwd="node" output="screen">
+<node pkg="orb_slam2_ros" type="RGBD_yolo" name="orb_slam2" args="$(find orb_slam2_lib)/Vocabulary/ORBvoc.bin $(arg orb_settings_file)" cwd="node" output="screen">
   <param name="octomap_enabled" value="$(arg octomap_enabled)"/>
   <!-- needed for projected/gradient map-->
   <param name="octomap_resolution" value="0.02"/>

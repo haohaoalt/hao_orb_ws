@@ -82,26 +82,28 @@ target_link_libraries(Mono
 #)
 
 # Node for stereo camera
-add_executable(Stereo
-  src/ros_stereo.cc
+add_executable(Stereo_kitti
+  src/ros_kitti_stereo_yolo.cc
   src/ROSPublisher.cpp
 )
 
-add_dependencies(Stereo ${${PROJECT_NAME}_EXPORTED_TARGETS})
+add_dependencies(Stereo_kitti ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
-target_link_libraries(Stereo
+target_link_libraries(Stereo_kitti
   ${LIBS}
 )
 
 # Node for RGB-D camera
-add_executable(RGBD
-  src/ros_rgbd.cc
+add_executable(RGBD_yolo
+  src/ros_rgbd_yolo.cc
   src/ROSPublisher.cpp
 )
 
-add_dependencies(Stereo ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
-target_link_libraries(RGBD
+add_dependencies(Stereo_kitti ${${PROJECT_NAME}_EXPORTED_TARGETS})
+
+
+target_link_libraries(RGBD_yolo
   ${LIBS}
 )
 

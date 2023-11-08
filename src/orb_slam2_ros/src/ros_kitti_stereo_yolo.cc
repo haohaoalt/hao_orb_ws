@@ -65,6 +65,9 @@ public:
     bool do_rectify;
     cv::Mat M1l,M2l,M1r,M2r;
 };
+
+
+vector<std::pair<vector<double>, int>> detect_result;
 ros::Publisher pose_pub;
 nav_msgs::Path stereo_path;
 ros::Publisher stereo_path_pub;
@@ -75,8 +78,47 @@ void personTrack(const darknet_ros_msgs::BoundingBoxes::ConstPtr &msg)
     double ymin = msg->bounding_boxes[0].ymin;
     double xmax = msg->bounding_boxes[0].xmax;
     double ymax = msg->bounding_boxes[0].ymax;
-    std::cout << "I'm in PersonTracking callback" << std::endl;
-    std::cout << "xmin ymin xmax ymax" << xmin << " " << ymin << " " << xmax << " " << ymax << std::endl;
+    int classid = msg->bounding_boxes[0].id;
+    string classtype = msg->bounding_boxes[0].Class;
+    float probability = msg->bounding_boxes[0].probability;
+    detect_result.clear();
+    vector<double> result_parameter;
+    result_parameter.push_back(xmin);
+    result_parameter.push_back(ymin);
+    result_parameter.push_back(xmax);
+    result_parameter.push_back(ymax);
+
+    int dynamic_id = -1; // 存入识别物体的种类
+    string class_label = classtype;
+
+    if (class_label == "tv" || // 低动态物体(在程序中可以假设为一直静态的物体):tv,refrigerator
+        class_label == "refrigerator" ||
+        class_label == "teddy bear" ||
+        class_label == "laptop")
+    {
+        dynamic_id = 1;
+    }
+
+    if (class_label == "chair" || // 中动态物体,在程序中不做先验动态静态判断
+        class_label == "car")
+    {
+        dynamic_id = 2;
+    }
+
+    if (class_label == "person")
+    { // 高动态物体:人,动物等
+        dynamic_id = 3;
+    }
+
+    detect_result.emplace_back(result_parameter, dynamic_id);
+
+    // std::cout << "I'm in PersonTracking callback" << std::endl;
+    // std::cout << "xmin: " << xmin << std::endl;
+    // std::cout << "ymin: " << xmax << std::endl;
+    // std::cout << "ymax: " << ymax << std::endl;
+    // std::cout << "classid:" << classid << std::endl;
+    // std::cout << "classtype: " << classtype << std::endl;
+    // std::cout << "probability: " << probability << std::endl;
 }
 int main(int argc, char **argv)
 {
@@ -129,6 +171,8 @@ int main(int argc, char **argv)
     const double freq = 100.0;
     // Set up a namespace for topics
     ros::NodeHandle nh("/orb_slam2");
+    // nh is startup and shutdown of the internal node inside a roscpp program
+    ros::Subscriber sub = nh.subscribe("/darknet_ros/bounding_boxes", 10, personTrack);
     ORB_SLAM2::System SLAM(make_unique<ROSSystemBuilder>(argv[1], argv[2], ORB_SLAM2::System::STEREO, freq, nh));
     ImageGrabber igb(&SLAM);
 
@@ -136,9 +180,10 @@ int main(int argc, char **argv)
     stringstream ss(argv[3]);
     //When the boolalpha format flag is set, bool values are inserted/extracted by their textual representation: either true or false, instead of integral values.
 	ss >> boolalpha >> igb.do_rectify;
-    cout << " igb.do_rectify" << endl;
+
     if(igb.do_rectify)
     {
+        cout << "I'm in ===igb.do_rectify=====" << endl;
         // Load settings related to stereo calibration
         cv::FileStorage fsSettings(argv[2], cv::FileStorage::READ);
         if(!fsSettings.isOpened())
@@ -178,13 +223,10 @@ int main(int argc, char **argv)
         cv::initUndistortRectifyMap(K_r,D_r,R_r,P_r.rowRange(0,3).colRange(0,3),cv::Size(cols_r,rows_r),CV_32F,igb.M1r,igb.M2r);
     }
 
-    //nh is startup and shutdown of the internal node inside a roscpp program
-    ros::NodeHandle nodeHandler;
-    ros::Subscriber sub = nodeHandler.subscribe("/darknet_ros/bounding_boxes", 10, personTrack);
 
     //set subscribed topics, names changed for ZED Topics
-    message_filters::Subscriber<sensor_msgs::Image> left_sub(nodeHandler, "/left/image_rect_color", 1);
-    message_filters::Subscriber<sensor_msgs::Image> right_sub(nodeHandler, "/right/image_rect_color", 1);
+    message_filters::Subscriber<sensor_msgs::Image> left_sub(nh, "/left/image_rect_color", 1);
+    message_filters::Subscriber<sensor_msgs::Image> right_sub(nh, "/right/image_rect_color", 1);
 
     //a policy used by message_filters::sync::Synchronizer to match messages coming on a set of topics
     //can match messages even if they have different time stamps
@@ -196,8 +238,8 @@ int main(int argc, char **argv)
     sync.registerCallback(boost::bind(&ImageGrabber::GrabStereo,&igb,_1,_2));
 
     //haoz add pose pub and stereo_path_pub
-    pose_pub = nodeHandler.advertise<geometry_msgs::PoseStamped>("ORB_SLAM/pose",5);
-    stereo_path_pub = nodeHandler.advertise<nav_msgs::Path>("/orbslam2/camera_path",10);
+    pose_pub = nh.advertise<geometry_msgs::PoseStamped>("ORB_SLAM/pose",5);
+    stereo_path_pub = nh.advertise<nav_msgs::Path>("/orbslam2/camera_path",10);
 
 
     clock_t tStart = clock();
@@ -250,18 +292,20 @@ void ImageGrabber::GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft,const se
     // rectify images, not needed with images from zed
     if(do_rectify)
     {
+        cout << "I'm in do_rectify" << endl;
         cv::Mat imLeft, imRight;
         cv::remap(cv_ptrLeft->image,imLeft,M1l,M2l,cv::INTER_LINEAR);
         cv::remap(cv_ptrRight->image,imRight,M1r,M2r,cv::INTER_LINEAR);
         // starts the tracking thread
-        mpSLAM->TrackStereo(imLeft,imRight,cv_ptrLeft->header.stamp.toSec());
+        mpSLAM->TrackStereo(imLeft, imRight, cv_ptrLeft->header.stamp.toSec(), detect_result);
     }
     else
     {
+        cout << "I'm not in do_rectify" << endl;
         // hayden 返回得到一个4x4的矩阵信息，该矩阵包含了三个旋转分量以及三个平移分量。我们对该矩阵进行处理并发布出最后的位姿信息：
         cv::Mat Tcw;
         // hayden ORB_SLAM2中的位姿信息由下列函数返回，将其转换为所需的数据类型发布出去
-        Tcw = mpSLAM->TrackStereo(cv_ptrLeft->image,cv_ptrRight->image,cv_ptrLeft->header.stamp.toSec());
+        Tcw = mpSLAM->TrackStereo(cv_ptrLeft->image, cv_ptrRight->image, cv_ptrLeft->header.stamp.toSec(), detect_result);
         geometry_msgs::PoseStamped pose;
         pose.header.stamp = ros::Time::now();
         pose.header.frame_id = "odom2";

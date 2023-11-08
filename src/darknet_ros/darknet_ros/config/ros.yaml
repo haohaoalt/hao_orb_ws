@@ -1,8 +1,7 @@
 subscribers:
 
   camera_reading:
-    # topic: /kitti/camera_color_left/image_raw
-    topic: /camera/color/image_raw
+    topic: /kitti/camera_color_left/image_raw
     queue_size: 1
 
 actions:
@@ -25,7 +24,7 @@ publishers:
   detection_image:
     topic: /darknet_ros/detection_image
     queue_size: 1
-    latch: true
+    latch: false
 
 image_view:
 

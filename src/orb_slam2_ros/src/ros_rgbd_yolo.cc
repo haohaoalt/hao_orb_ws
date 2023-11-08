@@ -1,3 +1,12 @@
+/*
+ * @Author: https://github.com/haohaoalt
+ * @Date: 2023-11-08 16:07:29
+ * @LastEditors: haohaoalt haohaoalt@163.com
+ * @LastEditTime: 2023-11-08 16:21:20
+ * @FilePath: /hao_orb_ws/src/orb_slam2_ros/src/ros_rgbd_yolo.cc
+ * @Description: 
+ * Copyright (c) 2023 by haohaoalt@163.com, All Rights Reserved. 
+ */
 /**
  * This file is part of ORB-SLAM2.
  *
@@ -215,8 +224,8 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr &msgRGB, const sens
         return;
     }
     cv::Mat Tcw;
+    // Step rgbd 1 : TrackRGBD
     Tcw = mpSLAM->TrackRGBD(cv_ptrRGB->image, cv_ptrD->image, cv_ptrRGB->header.stamp.toSec(), detect_result);
-    // Tcw = mpSLAM->TrackRGBD(cv_ptrRGB->image, cv_ptrD->image, cv_ptrRGB->header.stamp.toSec());
 
     detect_result.clear();
 
