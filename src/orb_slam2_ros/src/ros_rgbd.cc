@@ -47,63 +47,12 @@
 #include "Converter.h"
 #include <nav_msgs/Path.h>
 
-// hayden darknet ros darknet_ros_msgs/BoundingBoxes sub
-#include <darknet_ros_msgs/BoundingBox.h>
-#include <darknet_ros_msgs/BoundingBoxes.h>
-
 using namespace std;
 vector<std::pair<vector<double>, int>> detect_result;
 ros::Publisher pose_pub;
 nav_msgs::Path rgbd_path;
 ros::Publisher rgbd_path_pub;
-void personTrack(const darknet_ros_msgs::BoundingBoxes::ConstPtr &msg)
-{
-    double xmin = msg->bounding_boxes[0].xmin;
-    double ymin = msg->bounding_boxes[0].ymin;
-    double xmax = msg->bounding_boxes[0].xmax;
-    double ymax = msg->bounding_boxes[0].ymax;
-    int classid = msg->bounding_boxes[0].id;
-    string classtype = msg->bounding_boxes[0].Class;
-    float probability = msg->bounding_boxes[0].probability;
-    detect_result.clear();
-    vector<double> result_parameter;
-    result_parameter.push_back(xmin);
-    result_parameter.push_back(ymin);
-    result_parameter.push_back(xmax);
-    result_parameter.push_back(ymax);
 
-    int dynamic_id = -1; // 存入识别物体的种类
-    string class_label = classtype;
-
-    if (class_label == "tv" || // 低动态物体(在程序中可以假设为一直静态的物体):tv,refrigerator
-        class_label == "refrigerator" ||
-        class_label == "teddy bear" ||
-        class_label == "laptop")
-    {
-        dynamic_id = 1;
-    }
-
-    if (class_label == "chair" || // 中动态物体,在程序中不做先验动态静态判断
-        class_label == "car")
-    {
-        dynamic_id = 2;
-    }
-
-    if (class_label == "person")
-    { // 高动态物体:人,动物等
-        dynamic_id = 3;
-    }
-
-    detect_result.emplace_back(result_parameter, dynamic_id);
-
-    // std::cout << "I'm in PersonTracking callback" << std::endl;
-    // std::cout << "xmin: " << xmin << std::endl;
-    // std::cout << "ymin: " << xmax << std::endl;
-    // std::cout << "ymax: " << ymax << std::endl;
-    // std::cout << "classid:" << classid << std::endl;
-    // std::cout << "classtype: " << classtype << std::endl;
-    // std::cout << "probability: " << probability << std::endl;
-}
 class ImageGrabber
 {
 public:
@@ -154,11 +103,9 @@ int main(int argc, char **argv)
     const double freq = 100.0;
     // Set up a namespace for topics
     ros::NodeHandle nh("/orb_slam2");
-    // ros::Subscriber sub = nh.subscribe("/darknet_ros/bounding_boxes", 10, personTrack);
     ORB_SLAM2::System SLAM(make_unique<ROSSystemBuilder>(argv[1], argv[2], ORB_SLAM2::System::RGBD, freq, nh));
     ImageGrabber igb(&SLAM);
     ros::NodeHandle nodeHandler;
-    ros::Subscriber sub = nodeHandler.subscribe("/darknet_ros/bounding_boxes", 10, personTrack);
     //hayden orbslam2 rgbd subscribe topic
     message_filters::Subscriber<sensor_msgs::Image> rgb_sub(nodeHandler, "/camera/rgb/image_color", 1);
     message_filters::Subscriber<sensor_msgs::Image> depth_sub(nodeHandler, "/camera/depth/image", 1);
@@ -216,10 +163,8 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr &msgRGB, const sens
         return;
     }
     cv::Mat Tcw;
-    Tcw = mpSLAM->TrackRGBD(cv_ptrRGB->image, cv_ptrD->image, cv_ptrRGB->header.stamp.toSec(), detect_result);
-    // Tcw = mpSLAM->TrackRGBD(cv_ptrRGB->image, cv_ptrD->image, cv_ptrRGB->header.stamp.toSec());
+    Tcw = mpSLAM->TrackRGBD(cv_ptrRGB->image, cv_ptrD->image, cv_ptrRGB->header.stamp.toSec());
 
-    detect_result.clear();
 
     geometry_msgs::PoseStamped pose;
     pose.header.stamp = ros::Time::now();

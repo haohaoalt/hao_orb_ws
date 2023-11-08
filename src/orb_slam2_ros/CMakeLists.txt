@@ -27,7 +27,6 @@ find_package(catkin REQUIRED COMPONENTS
   pcl_conversions
   message_generation
   octomap_ros
-  darknet_ros_msgs
 )
 
 # Generate messages in the 'msg' folder

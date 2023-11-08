@@ -47,9 +47,7 @@
 #include<tf/transform_broadcaster.h>
 #include"Converter.h"
 #include<nav_msgs/Path.h>
-// hayden darknet ros darknet_ros_msgs/BoundingBoxes sub
-#include <darknet_ros_msgs/BoundingBox.h>
-#include <darknet_ros_msgs/BoundingBoxes.h>
+
 
 using namespace std;
 
@@ -69,15 +67,7 @@ ros::Publisher pose_pub;
 nav_msgs::Path stereo_path;
 ros::Publisher stereo_path_pub;
 
-void personTrack(const darknet_ros_msgs::BoundingBoxes::ConstPtr &msg)
-{
-    double xmin = msg->bounding_boxes[0].xmin;
-    double ymin = msg->bounding_boxes[0].ymin;
-    double xmax = msg->bounding_boxes[0].xmax;
-    double ymax = msg->bounding_boxes[0].ymax;
-    std::cout << "I'm in PersonTracking callback" << std::endl;
-    std::cout << "xmin ymin xmax ymax" << xmin << " " << ymin << " " << xmax << " " << ymax << std::endl;
-}
+
 int main(int argc, char **argv)
 {
     
@@ -180,7 +170,6 @@ int main(int argc, char **argv)
 
     //nh is startup and shutdown of the internal node inside a roscpp program
     ros::NodeHandle nodeHandler;
-    ros::Subscriber sub = nodeHandler.subscribe("/darknet_ros/bounding_boxes", 10, personTrack);
 
     //set subscribed topics, names changed for ZED Topics
     message_filters::Subscriber<sensor_msgs::Image> left_sub(nodeHandler, "/left/image_rect_color", 1);
