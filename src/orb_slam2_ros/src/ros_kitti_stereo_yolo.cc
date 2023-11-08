@@ -294,6 +294,7 @@ void ImageGrabber::GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft,const se
     {
         cout << "I'm in do_rectify" << endl;
         cv::Mat imLeft, imRight;
+        // cv::INTER_LINEAR标志指定在重映射过程中使用的插值方法，这里使用的是线性插值
         cv::remap(cv_ptrLeft->image,imLeft,M1l,M2l,cv::INTER_LINEAR);
         cv::remap(cv_ptrRight->image,imRight,M1r,M2r,cv::INTER_LINEAR);
         // starts the tracking thread
