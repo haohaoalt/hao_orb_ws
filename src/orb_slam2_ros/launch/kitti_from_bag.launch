@@ -16,7 +16,7 @@
 
 <!-- rosbag replay-->
 <param name="use_sim_time" value="true"/>
-<node pkg="rosbag" type="play" name="player" output="screen" args="$(arg bag_data_path) --clock --pause -r 0.5">
+<node pkg="rosbag" type="play" name="player" output="screen" args="$(arg bag_data_path) --clock --pause -r 1">
   <remap from="kitti/camera_gray_left/image_raw" to="left/image_rect_color"/>
   <!-- <remap from="/cam0/image_raw" to="left/image_rect_color"/> -->
 
@@ -43,7 +43,7 @@
 
 
 <!-- 在rviz中显示-->
-<node name="rviz" pkg="rviz" type="rviz" args="-d $(find orb_slam2_ros)/rviz/orb2-map.rviz" required="true" />
+<node name="rviz" pkg="rviz" type="rviz" args="-d $(find orb_slam2_ros)/rviz/hayden-kitti.rviz" required="true" />
 
 
 </launch>
