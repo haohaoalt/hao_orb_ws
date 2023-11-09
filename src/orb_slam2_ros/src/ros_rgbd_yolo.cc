@@ -2,7 +2,7 @@
  * @Author: https://github.com/haohaoalt
  * @Date: 2023-11-08 16:07:29
  * @LastEditors: haohaoalt haohaoalt@163.com
- * @LastEditTime: 2023-11-08 16:21:20
+ * @LastEditTime: 2023-11-09 15:06:05
  * @FilePath: /hao_orb_ws/src/orb_slam2_ros/src/ros_rgbd_yolo.cc
  * @Description: 
  * Copyright (c) 2023 by haohaoalt@163.com, All Rights Reserved. 
@@ -167,9 +167,13 @@ int main(int argc, char **argv)
     ORB_SLAM2::System SLAM(make_unique<ROSSystemBuilder>(argv[1], argv[2], ORB_SLAM2::System::RGBD, freq, nh));
     ImageGrabber igb(&SLAM);
  
-    // hayden orbslam2 rgbd subscribe topic
-    message_filters::Subscriber<sensor_msgs::Image> rgb_sub(nh, "/camera/color/image_raw", 1);
-    message_filters::Subscriber<sensor_msgs::Image> depth_sub(nh, "/camera/aligned_depth_to_color/image_raw", 1);
+    // hayden orbslam2 d455 rgbd subscribe topic
+    // message_filters::Subscriber<sensor_msgs::Image> rgb_sub(nh, "/camera/color/image_raw", 1);
+    // message_filters::Subscriber<sensor_msgs::Image> depth_sub(nh, "/camera/aligned_depth_to_color/image_raw", 1);
+
+    // hayden orbslam2 tum rgbd subscribe topic
+    message_filters::Subscriber<sensor_msgs::Image> rgb_sub(nh, "/camera/rgb/image_color", 1);
+    message_filters::Subscriber<sensor_msgs::Image> depth_sub(nh, "/camera/depth/image", 1);
     typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> sync_pol;
     message_filters::Synchronizer<sync_pol> sync(sync_pol(10), rgb_sub, depth_sub);
 

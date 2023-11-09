@@ -11,7 +11,7 @@
   <arg name="yolo_config_path"           default="$(find darknet_ros)/yolo_network_config/cfg"/>
 
   <!-- ROS and network parameter files -->
-  <arg name="ros_param_file"             default="$(find darknet_ros)/config/ros.yaml"/>
+  <arg name="ros_param_file"             default="$(find darknet_ros)/config/ros_kitti.yaml"/>
   <arg name="network_param_file"         default="$(find darknet_ros)/config/yolov3.yaml"/>
 
   <!-- Load parameters -->
