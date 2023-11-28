@@ -2,7 +2,7 @@
 <launch>
 
 <!-- rosbag arguments -->
-<arg name="bag_data_path" default="/media/slam007/Friday/Dataset/Realsence/rgbd/d455/1026d455.bag"/>
+<arg name="bag_data_path" default="/home/ubuntu/Dev/Dataset/Realsence/rgbd/d455/1026d455.bag"/>
 
 <!-- ORBSLAM arguments -->
 <arg name="octomap_enabled"         		default="true"/>
@@ -20,7 +20,7 @@
   仅播放前十秒：rosbag play -u 10 xx.bag
   从120s开始播放，只播放20s，就是播放120s~140s的时间段： rosbag play xx.bag -s 120 -u 20
   -->
-<node pkg="rosbag" type="play" name="player" output="screen" args="$(arg bag_data_path) --clock --pause -r 1">
+<node pkg="rosbag" type="play" name="player" output="screen" args="$(arg bag_data_path) --clock --pause -r 0.8">
 </node>
 
 <!-- ORBSLAM2 with Ros -->
