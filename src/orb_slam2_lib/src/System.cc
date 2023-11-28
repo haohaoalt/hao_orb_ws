@@ -650,6 +650,7 @@ vector<cv::KeyPoint> System::GetTrackedKeyPointsUn()
     unique_lock<mutex> lock(mMutexState);
     return mTrackedKeyPointsUn;
 }
+//hayden: System SaveMap
 void System::SaveMap(const string &filename)
 {
     //lock MapPoint global Mutex when saving map
@@ -661,6 +662,7 @@ void System::SaveMap(const string &filename)
         exit(-1);
     }
     cout << "Saving Mapfile: " << mapfile << " ...." <<std::flush;
+    //利用Boost的序列化库，将地图数据 mpMap 和关键帧数据库 mpKeyFrameDatabase 保存到文件中。这里使用的是二进制归档方法。
     boost::archive::binary_oarchive oa(out, boost::archive::no_header);
     //Saving an instance of Map / KeyFrameDatabase here invokes the relevant serialize function which saves
     //all the Map class member variables (mostly private). We just have to apply an archive operator (<<)

@@ -152,7 +152,7 @@ int main(int argc, char **argv)
     }
 
     ros::start();
-    if (argc != 3)
+    if (argc <= 3)
     {
         cerr << endl
              << "Usage: rosrun ORB_SLAM2 RGBD path_to_vocabulary path_to_settings" << endl;
@@ -163,7 +163,7 @@ int main(int argc, char **argv)
     const double freq = 100.0;
     // Set up a namespace for topics
     ros::NodeHandle nh("/orb_slam2");
-    ros::Subscriber sub = nh.subscribe("/darknet_ros/bounding_boxes", 10, personTrack);
+    ros::Subscriber sub = nh.subscribe("/darknet_ros/bounding_boxes", 20, personTrack);
     ORB_SLAM2::System SLAM(make_unique<ROSSystemBuilder>(argv[1], argv[2], ORB_SLAM2::System::RGBD, freq, nh));
     ImageGrabber igb(&SLAM);
  
@@ -172,8 +172,8 @@ int main(int argc, char **argv)
     // message_filters::Subscriber<sensor_msgs::Image> depth_sub(nh, "/camera/aligned_depth_to_color/image_raw", 1);
 
     // hayden orbslam2 tum rgbd subscribe topic
-    message_filters::Subscriber<sensor_msgs::Image> rgb_sub(nh, "/camera/color/image_raw", 1);
-    message_filters::Subscriber<sensor_msgs::Image> depth_sub(nh, "/camera/aligned_depth_to_color/image_raw", 1);
+    message_filters::Subscriber<sensor_msgs::Image> rgb_sub(nh, "/camera/rgb/image_color", 100);
+    message_filters::Subscriber<sensor_msgs::Image> depth_sub(nh, "/camera/depth/image", 100);
     typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> sync_pol;
     message_filters::Synchronizer<sync_pol> sync(sync_pol(10), rgb_sub, depth_sub);
 
@@ -193,10 +193,22 @@ int main(int argc, char **argv)
     SLAM.Shutdown();
     printf("Time taken between SLAM.Start() and SLAM.Shutdown(): %.2fs\n", (double)(clock() - tStart) / CLOCKS_PER_SEC);
 
-    // Save camera trajectory
-    SLAM.SaveKeyFrameTrajectoryTUM("KeyFrameTrajectory.txt");
-    SLAM.SaveTrajectoryTUM("FrameTrajectory_TUM_Format.txt");
-    SLAM.SaveTrajectoryKITTI("FrameTrajectory_KITTI_Format.txt");
+    bool bFileName= (((argc-3) % 2) == 1);
+
+    string file_name;
+    if (bFileName)
+    {
+        file_name = string(argv[argc-1]);
+        cout << "file name: " << file_name << endl;
+        // Save camera trajectory
+        const string kf_file =  "kf_" + string(argv[argc-1]) + ".txt";
+        const string f_file =  "f_" + string(argv[argc-1]) + ".txt";
+        SLAM.SaveTrajectoryTUM(f_file);
+        SLAM.SaveKeyFrameTrajectoryTUM(kf_file);
+    }else{
+        SLAM.SaveKeyFrameTrajectoryTUM("KeyFrameTrajectory.txt");
+        SLAM.SaveTrajectoryTUM("FrameTrajectory_TUM_Format.txt");
+    }
 
     ros::shutdown();
 
