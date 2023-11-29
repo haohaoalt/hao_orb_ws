@@ -38,11 +38,11 @@ namespace ORB_SLAM2
 class KeyFrame;
 class Frame;
 
-
+//hayden： 关键帧数据库
 class KeyFrameDatabase
 {
 public:
-
+    //hayden： voc词袋模型的字典
     KeyFrameDatabase(ORBVocabulary *voc);
     //KeyFrameDatabase(const ORBVocabulary &voc);
 
@@ -53,6 +53,8 @@ public:
    void clear();
 
    // Loop Detection
+   //hayden：在闭环检测中找到与该关键帧可能闭环的关键帧;
+   //param pKF需要闭环的关键帧 minScore相似性分数最低要求， return可能闭环关键帧
    std::vector<KeyFrame *> DetectLoopCandidates(KeyFrame* pKF, float minScore);
 
    // Relocalization

@@ -169,7 +169,10 @@ namespace ORB_SLAM2
     private:
         // give boost::serial::access access to all private
         // and protected members of the Map class
+        // hayden: 定义了友元类和一个序列化函数模板
+        // hayden 声明了boost::serialization::access类为Map类的友元。这意味着boost::serialization::access类可以访问Map类的所有私有和保护成员。这样做的目的是为了允许Boost序列化库能够序列化和反序列化Map对象的私有成员变量。
         friend class boost::serialization::access;
+        // hayden 函数模板声明，它声明了一个模板参数Archive，该参数代表归档类型
         template <class Archive>
         void serialize(Archive &ar, const unsigned int version);
 
