@@ -495,6 +495,7 @@ namespace ORB_SLAM2
         }
     }
 
+//hayden: 进入ExtractORB，提取特征
     void Frame::ExtractORB(int flag, const cv::Mat &im)
     {
         if (flag == 0)
