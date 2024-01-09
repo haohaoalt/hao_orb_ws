@@ -189,8 +189,7 @@ namespace ORB_SLAM2
         mpPublisherThread = pPubThread;
     }
 
-    // Step Tracking GrabImageStereo
-    cv::Mat Tracking::GrabImageStereo(const cv::Mat &imRectLeft, const cv::Mat &imRectRight, const double &timestamp, const vector<std::pair<vector<double>, int>> &detect_result)
+    cv::Mat Tracking::GrabImageStereo(const cv::Mat &imRectLeft, const cv::Mat &imRectRight, const double &timestamp)
     {
         mImGray = imRectLeft;
         cv::Mat imGrayRight = imRectRight;
@@ -231,14 +230,47 @@ namespace ORB_SLAM2
                               mK,                  // 内参矩阵
                               mDistCoef,           // 去畸变参数
                               mbf,                 // 基线长度
-                              mThDepth,            // 远点,近点的区分阈值
-                              detect_result);
+                              mThDepth);           // 远点,近点的区分阈值
         // Step 3 ：跟踪
         Track();
 
         return mCurrentFrame.mTcw.clone();
     }
     // hayden Tracking::GrabImageRGBD
+    //  输入左目RGB或RGBA图像和深度图
+    //  1、将图像转为mImGray和imDepth并初始化mCurrentFrame
+    //  2、进行tracking过程
+    //  输出世界坐标系到该帧相机坐标系的变换矩阵
+
+    cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB, const cv::Mat &imD, const double &timestamp)
+    {
+        mImGray = imRGB;
+        cv::Mat imDepth = imD;
+
+        if (mImGray.channels() == 3)
+        {
+            if (mbRGB)
+                cvtColor(mImGray, mImGray, CV_RGB2GRAY);
+            else
+                cvtColor(mImGray, mImGray, CV_BGR2GRAY);
+        }
+        else if (mImGray.channels() == 4)
+        {
+            if (mbRGB)
+                cvtColor(mImGray, mImGray, CV_RGBA2GRAY);
+            else
+                cvtColor(mImGray, mImGray, CV_BGRA2GRAY);
+        }
+
+        if ((fabs(mDepthMapFactor - 1.0f) > 1e-5) || imDepth.type() != CV_32F)
+            imDepth.convertTo(imDepth, CV_32F, mDepthMapFactor);
+
+        mCurrentFrame = Frame(mImGray, imDepth, timestamp, mpORBextractorLeft, mpORBVocabulary, mK, mDistCoef, mbf, mThDepth);
+
+        Track();
+
+        return mCurrentFrame.mTcw.clone();
+    }
     // 输入左目RGB或RGBA图像和深度图
     // 1、将图像转为mImGray和imDepth并初始化mCurrentFrame
     // 2、进行tracking过程
@@ -251,7 +283,7 @@ namespace ORB_SLAM2
     {
         mImGray = imRGB;
         cv::Mat imDepth = imD;
-        //Step 1：将RGB或RGBA图像转为灰度图像
+        // step 1：将RGB或RGBA图像转为灰度图像
         if (mImGray.channels() == 3)
         {
             if (mbRGB)

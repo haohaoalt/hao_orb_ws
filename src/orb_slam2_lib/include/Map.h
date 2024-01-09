@@ -1,8 +1,8 @@
 /*
  * @Author: https://github.com/haohaoalt
  * @Date: 2023-10-26 15:10:38
- * @LastEditors: haohaoalt haohaoalt@163.com
- * @LastEditTime: 2023-10-28 16:25:19
+ * @LastEditors: hayden haohaoalt@163.com
+ * @LastEditTime: 2024-01-09 20:18:27
  * @FilePath: /hao_orb_ws/src/orb_slam2_lib/include/Map.h
  * @Description:
  * Copyright (c) 2023 by haohaoalt@163.com, All Rights Reserved.

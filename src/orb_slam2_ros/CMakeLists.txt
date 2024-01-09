@@ -27,7 +27,6 @@ find_package(catkin REQUIRED COMPONENTS
   pcl_conversions
   message_generation
   octomap_ros
-  darknet_ros_msgs
 )
 
 # Generate messages in the 'msg' folder
@@ -82,28 +81,26 @@ target_link_libraries(Mono
 #)
 
 # Node for stereo camera
-add_executable(Stereo_kitti
-  src/ros_kitti_stereo_yolo.cc
+add_executable(Stereo
+  src/ros_stereo.cc
   src/ROSPublisher.cpp
 )
 
-add_dependencies(Stereo_kitti ${${PROJECT_NAME}_EXPORTED_TARGETS})
+add_dependencies(Stereo ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
-target_link_libraries(Stereo_kitti
+target_link_libraries(Stereo
   ${LIBS}
 )
 
 # Node for RGB-D camera
-add_executable(RGBD_yolo
-  src/ros_rgbd_yolo.cc
+add_executable(RGBD
+  src/ros_rgbd.cc
   src/ROSPublisher.cpp
 )
 
+add_dependencies(Stereo ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
-add_dependencies(Stereo_kitti ${${PROJECT_NAME}_EXPORTED_TARGETS})
-
-
-target_link_libraries(RGBD_yolo
+target_link_libraries(RGBD
   ${LIBS}
 )
 

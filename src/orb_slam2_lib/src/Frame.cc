@@ -27,11 +27,11 @@
 namespace ORB_SLAM2
 {
 
-    long unsigned int Frame::nNextId = 0;
-    bool Frame::mbInitialComputations = true;
-    float Frame::cx, Frame::cy, Frame::fx, Frame::fy, Frame::invfx, Frame::invfy;
-    float Frame::mnMinX, Frame::mnMinY, Frame::mnMaxX, Frame::mnMaxY;
-    float Frame::mfGridElementWidthInv, Frame::mfGridElementHeightInv;
+long unsigned int Frame::nNextId = 0;
+bool Frame::mbInitialComputations =true;
+float Frame::cx, Frame::cy, Frame::fx, Frame::fy, Frame::invfx, Frame::invfy;
+float Frame::mnMinX, Frame::mnMinY, Frame::mnMaxX, Frame::mnMaxY;
+float Frame::mfGridElementWidthInv, Frame::mfGridElementHeightInv;
 
     Frame::Frame()
     {
@@ -80,15 +80,11 @@ namespace ORB_SLAM2
             SetPose(frame.mTcw);
     }
 
-    //TODO Frame need to do something
-
     Frame::Frame(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timeStamp, ORBextractor *extractorLeft, ORBextractor *extractorRight, ORBVocabulary *voc, cv::Mat &K, cv::Mat &distCoef, const float &bf, const float &thDepth)
         : mpORBvocabulary(voc), mpORBextractorLeft(extractorLeft), mpORBextractorRight(extractorRight), mTimeStamp(timeStamp), mK(K.clone()), mDistCoef(distCoef.clone()), mbf(bf), mThDepth(thDepth),
           mpReferenceKF(static_cast<KeyFrame *>(NULL))
     {
-
         // Frame ID
-        // Step 1 双目 帧的ID 自增
         mnId = nNextId++;
 
         // Scale Level Info
@@ -106,109 +102,16 @@ namespace ORB_SLAM2
         threadLeft.join();
         threadRight.join();
 
-        // 获取特征点的个数
         N = mvKeys.size();
 
-        // 如果这一帧没有能够提取出特征点，那么就直接返回了
         if (mvKeys.empty())
             return;
-
 
         UndistortKeyPoints();
 
         ComputeStereoMatches();
 
-        // 初始化本帧的地图点
         mvpMapPoints = vector<MapPoint *>(N, static_cast<MapPoint *>(NULL));
-        // 记录地图点是否为外点，初始化均为外点false
-        mvbOutlier = vector<bool>(N, false);
-
-        // This is done only for the first Frame (or after a change in the calibration)
-        if (mbInitialComputations)
-        {
-            ComputeImageBounds(imLeft);
-
-            mfGridElementWidthInv = static_cast<float>(FRAME_GRID_COLS) / (mnMaxX - mnMinX);
-            mfGridElementHeightInv = static_cast<float>(FRAME_GRID_ROWS) / (mnMaxY - mnMinY);
-
-            fx = K.at<float>(0, 0);
-            fy = K.at<float>(1, 1);
-            cx = K.at<float>(0, 2);
-            cy = K.at<float>(1, 2);
-            invfx = 1.0f / fx;
-            invfy = 1.0f / fy;
-
-            mbInitialComputations = false;
-        }
-
-        mb = mbf / fx;
-
-        AssignFeaturesToGrid();
-    }
-
-    Frame::Frame(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timeStamp, ORBextractor *extractorLeft, ORBextractor *extractorRight, ORBVocabulary *voc, cv::Mat &K, cv::Mat &distCoef, const float &bf, const float &thDepth, const vector<std::pair<vector<double>, int>> &detect_result)
-        : mpORBvocabulary(voc), mpORBextractorLeft(extractorLeft), mpORBextractorRight(extractorRight), mTimeStamp(timeStamp), mK(K.clone()), mDistCoef(distCoef.clone()), mbf(bf), mThDepth(thDepth),
-          mpReferenceKF(static_cast<KeyFrame *>(NULL))
-    {
-        vector<double> vobject_box;
-        int nobject_class;
-        for (int k = 0; k < detect_result.size(); ++k)
-        {
-            vobject_box = detect_result[k].first; // 把所有物体检测存在了vobject_box和vobject_class中
-            nobject_class = detect_result[k].second;
-            std::shared_ptr<Object> obj = make_shared<Object>(vobject_box, nobject_class);
-            objects_cur_.push_back(obj);
-        }
-        // Frame ID
-        // Step 1 双目 帧的ID 自增
-        mnId = nNextId++;
-
-        // Scale Level Info
-        mnScaleLevels = mpORBextractorLeft->GetLevels();
-        mfScaleFactor = mpORBextractorLeft->GetScaleFactor();
-        mfLogScaleFactor = log(mfScaleFactor);
-        mvScaleFactors = mpORBextractorLeft->GetScaleFactors();
-        mvInvScaleFactors = mpORBextractorLeft->GetInverseScaleFactors();
-        mvLevelSigma2 = mpORBextractorLeft->GetScaleSigmaSquares();
-        mvInvLevelSigma2 = mpORBextractorLeft->GetInverseScaleSigmaSquares();
-
-        // ORB extraction
-        thread threadLeft(&Frame::ExtractORB, this, 0, imLeft);
-        thread threadRight(&Frame::ExtractORB, this, 1, imRight);
-        threadLeft.join();
-        threadRight.join();
-
-        // 获取特征点的个数
-        N = mvKeys.size();
-
-        // 如果这一帧没有能够提取出特征点，那么就直接返回了
-        if (mvKeys.empty())
-            return;
-
-        //*******直接检验特征点是否在动态物体的框内
-        // cout << "mvKeys.size() is " << mvKeys.size() << endl;
-        for (int k = 0; k < mvKeys.size(); ++k)
-        {
-            if (IsInDynamic(k) == true && IsInStatic(k) == false)
-            { // 在动态物体框内,但不在静态物体框内
-                vbInDynamic_mvKeys.push_back(true);
-                // cout << "true" << endl;
-                mvKeys[k] = cv::KeyPoint(-1, -1, -1);
-            }
-            else
-            {
-                vbInDynamic_mvKeys.push_back(false);
-                // cout << "false" << endl;
-            }
-        }
-
-        UndistortKeyPoints();
-
-        ComputeStereoMatches();
-
-        // 初始化本帧的地图点
-        mvpMapPoints = vector<MapPoint *>(N, static_cast<MapPoint *>(NULL));
-        // 记录地图点是否为外点，初始化均为外点false
         mvbOutlier = vector<bool>(N, false);
 
         // This is done only for the first Frame (or after a change in the calibration)
@@ -328,7 +231,7 @@ namespace ORB_SLAM2
 
         //*****
 
-        // Step 1 RGBD 帧的ID 自增
+        // Step 1 帧的ID 自增
         mnId = nNextId++;
 
         // Step 2 计算图像金字塔的参数
@@ -495,7 +398,6 @@ namespace ORB_SLAM2
         }
     }
 
-//hayden: 进入ExtractORB，提取特征
     void Frame::ExtractORB(int flag, const cv::Mat &im)
     {
         if (flag == 0)
@@ -893,45 +795,27 @@ namespace ORB_SLAM2
         }
     }
 
-    // 计算RGBD图像的立体深度信息
     void Frame::ComputeStereoFromRGBD(const cv::Mat &imDepth)
     {
-        /** 主要步骤如下:.对于彩色图像中的每一个特征点:<ul>  */
-        // mvDepth直接由depth图像读取`
-        // 这里是初始化这两个存储“右图”匹配特征点横坐标和存储特征点深度值的vector
         mvuRight = vector<float>(N, -1);
         mvDepth = vector<float>(N, -1);
 
-        // 开始遍历彩色图像中的所有特征点
         for (int i = 0; i < N; i++)
         {
-            /** <li> 从<b>未矫正的特征点</b>提供的坐标来读取深度图像拿到这个点的深度数据 </li> */
-            // 获取校正前和校正后的特征点
             const cv::KeyPoint &kp = mvKeys[i];
             const cv::KeyPoint &kpU = mvKeysUn[i];
 
-            // 获取其横纵坐标，注意 NOTICE 是校正前的特征点的
             const float &v = kp.pt.y;
             const float &u = kp.pt.x;
-            // 从深度图像中获取这个特征点对应的深度点
-            // NOTE 从这里看对深度图像进行去畸变处理是没有必要的,我们依旧可以直接通过未矫正的特征点的坐标来直接拿到深度数据
-            if(v < 0 || u < 0) continue;
+
             const float d = imDepth.at<float>(v, u);
 
-            //
-            /** <li> 如果获取到的深度点合法(d>0), 那么就保存这个特征点的深度,并且计算出等效的\在假想的右图中该特征点所匹配的特征点的横坐标 </li>
-             * \n 这个横坐标的计算是 x-mbf/d
-             * \n 其中的x使用的是<b>矫正后的</b>特征点的图像坐标
-             */
             if (d > 0)
             {
-                // 那么就保存这个点的深度
                 mvDepth[i] = d;
-                // 根据这个点的深度计算出等效的、在假想的右图中的该特征点的横坐标
-                // TODO 话说为什么要计算这个嘞，计算出来之后有什么用?可能是为了保持计算一致
                 mvuRight[i] = kpU.pt.x - mbf / d;
-            } // 如果获取到的深度点合法
-        }     // 开始遍历彩色图像中的所有特征点
+            }
+        }
     }
 
     cv::Mat Frame::UnprojectStereo(const int &i)

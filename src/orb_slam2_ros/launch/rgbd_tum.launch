@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+
+<!-- rosbag arguments -->
+<arg name="bag_data_path" default="/home/ubuntu/Dev/Dataset/TUM/rosbag/rgbd_dataset_freiburg2_desk_with_person.bag"/>
+
+<!-- ORBSLAM arguments -->
+<arg name="octomap_enabled"         		default="true"/>
+
+<!-- feature visualizer arguments -->
+<arg name="visualize_orb_features"          default="true"/>
+
+<!-- orb_settings_file arguments -->
+<arg name="orb_settings_file" default="$(find orb_slam2_ros)/settings/TUM2.yaml"/>
+
+<!-- rosbag replay-->
+<param name="use_sim_time" value="true"/>
+<!-- 
+  从10秒开始播放：rosbag play -s 10 xx.bag 
+  仅播放前十秒：rosbag play -u 10 xx.bag
+  从120s开始播放，只播放20s，就是播放120s~140s的时间段： rosbag play xx.bag -s 120 -u 20
+  -->
+<node pkg="rosbag" type="play" name="player" output="screen" args="$(arg bag_data_path) --clock --pause -r 1">
+  <!-- <remap from="/camera/color/image_raw" to="/camera/rgb/image_raw"/> -->
+  <!-- <remap from="/camera/depth/image_rect_raw" to="/camera/depth_registered/image_raw"/> -->
+  <!-- <remap from="/camera/rgb/image_color" to="/camera/rgb/image_raw"/>
+  <remap from="/camera/depth/image" to="/camera/aligned_depth_to_color/image_raw"/> -->
+</node>
+
+<!-- ORBSLAM2 with Ros -->
+<!-- Provide the correct settings .yaml file to specify camera parameters and ORB feature settings -->
+<node pkg="orb_slam2_ros" type="RGBD" name="orb_slam2" args="$(find orb_slam2_lib)/Vocabulary/ORBvoc.bin $(arg orb_settings_file)" cwd="node" output="screen">
+  <param name="octomap_enabled" value="$(arg octomap_enabled)"/>
+  <!-- needed for projected/gradient map-->
+  <param name="octomap_resolution" value="0.02"/>
+  <param name="occupancy_projection_min_height" value="-0.1"/>
+  <param name="occupancy_gradient_max_height" value="0.2"/>
+  <param name="occupancy_gradient_nb_erosions" value="1"/>
+  <param name="occupancy_gradient_low_slope" value="0.3"/>
+  <param name="occupancy_gradient_high_slope" value="0.5"/>
+</node>
+
+<!-- rqt_image_view for visualization of extracted ORB featues in camera frame -->
+<!-- <node pkg="rqt_image_view" type="rqt_image_view" name="rqt_image_view" args="image:=/orb_slam2/frame" if="$(arg visualize_orb_features)"/> -->
+
+<!-- 在rviz中显示-->
+<!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(find orb_slam2_ros)/rviz/orb2-map-rgbd-d455.rviz" required="true" /> -->
+
+
+
+</launch>

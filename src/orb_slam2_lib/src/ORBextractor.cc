@@ -1040,7 +1040,6 @@ static void computeDescriptors(const Mat& image, vector<KeyPoint>& keypoints, Ma
         computeOrbDescriptor(keypoints[i], image, &pattern[0], descriptors.ptr((int)i));
 }
 
-// hayden: （）是一个仿函数，也就是说在ORBextractor这个类中对这个（）进行了重载
 void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPoint>& _keypoints,
                       OutputArray _descriptors)
 { 
@@ -1105,12 +1104,11 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
     }
 }
 
-// hayden:构建图像金字塔ComputePyramid
-void ORBextractor::ComputePyramid(cv::Mat image) // 传入的参数是图像
+void ORBextractor::ComputePyramid(cv::Mat image)
 {
-    for (int level = 0; level < nlevels; ++level) // 判断层数是不是小于8
+    for (int level = 0; level < nlevels; ++level)
     {
-        float scale = mvInvScaleFactor[level]; // 获取当前层的缩放系数
+        float scale = mvInvScaleFactor[level];
         Size sz(cvRound((float)image.cols*scale), cvRound((float)image.rows*scale));
         Size wholeSize(sz.width + EDGE_THRESHOLD*2, sz.height + EDGE_THRESHOLD*2);
         Mat temp(wholeSize, image.type()), masktemp;
@@ -1120,7 +1118,7 @@ void ORBextractor::ComputePyramid(cv::Mat image) // 传入的参数是图像
         if( level != 0 )
         {
             resize(mvImagePyramid[level-1], mvImagePyramid[level], sz, 0, 0, INTER_LINEAR);
-            // hayden:扩充src边缘，将图像变大，便于处理边界
+
             copyMakeBorder(mvImagePyramid[level], temp, EDGE_THRESHOLD, EDGE_THRESHOLD, EDGE_THRESHOLD, EDGE_THRESHOLD,
                            BORDER_REFLECT_101+BORDER_ISOLATED);            
         }
