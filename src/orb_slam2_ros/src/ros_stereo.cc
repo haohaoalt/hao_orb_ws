@@ -169,11 +169,10 @@ int main(int argc, char **argv)
     }
 
     //nh is startup and shutdown of the internal node inside a roscpp program
-    ros::NodeHandle nodeHandler;
 
     //set subscribed topics, names changed for ZED Topics
-    message_filters::Subscriber<sensor_msgs::Image> left_sub(nodeHandler, "/left/image_rect_color", 1);
-    message_filters::Subscriber<sensor_msgs::Image> right_sub(nodeHandler, "/right/image_rect_color", 1);
+    message_filters::Subscriber<sensor_msgs::Image> left_sub(nh, "kitti/camera_gray_left/image_raw", 1);
+    message_filters::Subscriber<sensor_msgs::Image> right_sub(nh, "kitti/camera_gray_right/image_raw", 1);
 
     //a policy used by message_filters::sync::Synchronizer to match messages coming on a set of topics
     //can match messages even if they have different time stamps
@@ -185,8 +184,8 @@ int main(int argc, char **argv)
     sync.registerCallback(boost::bind(&ImageGrabber::GrabStereo,&igb,_1,_2));
 
     //haoz add pose pub and stereo_path_pub
-    pose_pub = nodeHandler.advertise<geometry_msgs::PoseStamped>("ORB_SLAM/pose",5);
-    stereo_path_pub = nodeHandler.advertise<nav_msgs::Path>("/orbslam2/camera_path",10);
+    pose_pub = nh.advertise<geometry_msgs::PoseStamped>("ORB_SLAM/pose",5);
+    stereo_path_pub = nh.advertise<nav_msgs::Path>("/orbslam2/camera_path",10);
 
 
     clock_t tStart = clock();

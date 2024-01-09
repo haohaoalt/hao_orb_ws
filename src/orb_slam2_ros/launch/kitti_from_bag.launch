@@ -4,7 +4,7 @@
 
 <!-- setup arguments -->
 <!-- rosbag arguments -->
-<arg name="bag_data_path"   default="/media/slam007/Friday/Dataset/KITTI/kitti_raw/rosbag/g06_kitti_2011_09_30_drive_0020_synced.bag"/>
+<arg name="bag_data_path"   default="/home/ubuntu/Dev/Dataset/KITTI/kitti_raw/rosbag/g00_kitti_2011_10_03_drive_0027_synced.bag"/>
 
 
 <!-- ORBSLAM arguments -->
@@ -16,17 +16,11 @@
 
 <!-- rosbag replay-->
 <param name="use_sim_time" value="true"/>
-<node pkg="rosbag" type="play" name="player" output="screen" args="$(arg bag_data_path) --clock --pause -r 1">
-  <remap from="kitti/camera_gray_left/image_raw" to="left/image_rect_color"/>
-  <!-- <remap from="/cam0/image_raw" to="left/image_rect_color"/> -->
-
-  <remap from="kitti/camera_gray_right/image_raw" to="right/image_rect_color"/>
-  <!-- <remap from="/cam1/image_raw" to="right/image_rect_color"/> -->
-
+<node pkg="rosbag" type="play" name="player" output="screen" args="$(arg bag_data_path) --clock --pause -r 0.8">
 </node>
 
 <!-- ORBSLAM2 launch -->
-<arg name="orb_settings_file" default="$(find orb_slam2_ros)/settings/KITTI04-12.yaml"/>
+<arg name="orb_settings_file" default="$(find orb_slam2_ros)/settings/KITTI00-02.yaml"/>
 
 <!-- ORBSLAM2 with Ros -->
 <!-- Provide the correct settings .yaml file to specify camera parameters and ORB feature settings -->
@@ -43,7 +37,7 @@
 
 
 <!-- 在rviz中显示-->
-<node name="rviz" pkg="rviz" type="rviz" args="-d $(find orb_slam2_ros)/rviz/hayden-kitti.rviz" required="true" />
+<!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(find orb_slam2_ros)/rviz/hayden-kitti.rviz" required="true" /> -->
 
 
 </launch>

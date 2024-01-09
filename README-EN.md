@@ -1,4 +1,4 @@
-<!--
+  <!--
  * @Author: https://github.com/haohaoalt
  * @Date: 2023-10-21 12:43:23
  * @LastEditors: haohaoalt haohaoalt@163.com
@@ -11,14 +11,25 @@
 ## 01 Dependent package and Build
 此扩展版本需要 ROS，因为它以 ROS 包的形式提供 ORB-SLAM2 功能，并使用主题广播将相机位置信息发布为 TransformationFrame，将地图点发布为 PointCloud，将跟踪状态发布为字符串。
 ```shell
+# 安装ROS
+wget http://fishros.com/install -O fishros && . fishros
+# 安装对应依赖包
 rosdep install --from-paths src --ignore-src -r -y
 sudo apt install ros-melodic-pcl-ros
+sudo apt-get install ros-melodic-geographic-*
+sudo apt-get install geographiclib-*
+sudo apt-get install libgeographic-*
+sudo apt-get install ros-melodic-serial
 
 pkg-config opencv --modversion
 # Required at leat 2.4.3. Tested with OpenCV 2.4.11 and OpenCV 3.
 
 sudo apt install libeigen3-dev
 apt show libeigen3-dev
+# 是因为编译时找不到unsupported文件，把usr/include/eigen3中的所有文件复制到usr/include中，编译器才找得到。
+sudo cp -r /usr/include/eigen3/Eigen /usr/include
+sudo cp -r /usr/include/eigen3/signature_of_eigen3_matrix_library /usr/include
+sudo cp -r /usr/include/eigen3/unsupported /usr/include
 # Required by g2o. Download and install instructions can be found at: http://eigen.tuxfamily.org. Required at least 3.1.0.
 
 # Boost : The Map save/load extension uses the boost serialization library libboost_serialization. Install via:

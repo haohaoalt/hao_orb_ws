@@ -2,7 +2,7 @@
 <launch>
 
 <!-- rosbag arguments -->
-<arg name="bag_data_path" default="/media/slam007/Friday/Dataset/Realsence/rgbd/d455/1026d455.bag"/>
+<arg name="bag_data_path" default="/home/ubuntu/Dev/Dataset/Realsence/rgbd/d455/1026d455.bag"/>
 
 <!-- ORBSLAM arguments -->
 <arg name="octomap_enabled"         		default="true"/>

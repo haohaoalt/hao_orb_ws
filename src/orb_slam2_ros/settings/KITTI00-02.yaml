@@ -74,6 +74,6 @@ Viewer.ViewpointF: 2000
 #Name of mapfile to be saved
 Map.mapfile: map.bin
 #Set to 1 if you want to save a map, 0 if not
-Map.save_map: 0
+Map.save_map: 1
 #Set to 1 if you want to load a saved map, 0 if not
 Map.load_map: 0

@@ -2,7 +2,7 @@
 <launch>
 
 <!-- rosbag arguments -->
-<arg name="bag_data_path" default="/media/slam007/Friday/Dataset/TUM/rosbag/rgbd_dataset_freiburg2_desk_with_person.bag"/>
+<arg name="bag_data_path" default="/home/ubuntu/Dev/Dataset/TUM/rosbag/rgbd_dataset_freiburg2_desk_with_person.bag"/>
 
 <!-- ORBSLAM arguments -->
 <arg name="octomap_enabled"         		default="true"/>
@@ -11,7 +11,7 @@
 <arg name="visualize_orb_features"          default="true"/>
 
 <!-- orb_settings_file arguments -->
-<arg name="orb_settings_file" default="$(find orb_slam2_ros)/settings/TUM1.yaml"/>
+<arg name="orb_settings_file" default="$(find orb_slam2_ros)/settings/TUM2.yaml"/>
 
 <!-- rosbag replay-->
 <param name="use_sim_time" value="true"/>

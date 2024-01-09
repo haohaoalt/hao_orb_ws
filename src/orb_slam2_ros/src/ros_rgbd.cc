@@ -92,7 +92,7 @@ int main(int argc, char **argv)
     }
 
     ros::start();
-    if (argc != 3)
+    if (argc <= 3)
     {
         cerr << endl
              << "Usage: rosrun ORB_SLAM2 RGBD path_to_vocabulary path_to_settings" << endl;
