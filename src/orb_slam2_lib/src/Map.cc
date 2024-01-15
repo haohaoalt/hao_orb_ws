@@ -52,25 +52,25 @@ void Map::AddMapPoint(MapPoint *pMP)
 }
 
 // hayden 向地图中插入ObjCenters
-void Map::AddObjCenters(MapPoint *pMP)
-{
-    unique_lock<mutex> lock(mMutexMap);
-    mspObjCenters.insert(pMP);
-    // cout << "mspObjCenters size is : " << mspObjCenters.size() << endl;
-}
+// void Map::AddObjCenters(MapPoint *pMP)
+// {
+//     unique_lock<mutex> lock(mMutexMap);
+//     mspObjCenters.insert(pMP);
+//     // cout << "mspObjCenters size is : " << mspObjCenters.size() << endl;
+// }
 
-void Map::EraseAllObjCenters()
-{
-    unique_lock<mutex> lock(mMutexMap);
+// void Map::EraseAllObjCenters()
+// {
+//     unique_lock<mutex> lock(mMutexMap);
 
-    mspObjCenters.erase(mspObjCenters.begin(), mspObjCenters.end());
-}
+//     mspObjCenters.erase(mspObjCenters.begin(), mspObjCenters.end());
+// }
 
-vector<MapPoint *> Map::GetAllObjCenters()
-{
-    unique_lock<mutex> lock(mMutexMap);
-    return vector<MapPoint *>(mspObjCenters.begin(), mspObjCenters.end());
-}
+// vector<MapPoint *> Map::GetAllObjCenters()
+// {
+//     unique_lock<mutex> lock(mMutexMap);
+//     return vector<MapPoint *>(mspObjCenters.begin(), mspObjCenters.end());
+// }
 /**
  * @brief 从地图中删除地图点,但是其实这个地图点所占用的内存空间并没有被释放
  *

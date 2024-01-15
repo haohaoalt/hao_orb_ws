@@ -65,10 +65,10 @@ public:
      * @param[in] timestamp     时间戳
      * @return cv::Mat          世界坐标系到该帧相机坐标系的变换矩阵
      */
-    cv::Mat GrabImageRGBD(const cv::Mat &imRGB,
-                          const cv::Mat &imD,
-                          const double &timestamp,
-                          const vector<std::pair<vector<double>, int>> &detect_result);
+    //cv::Mat GrabImageRGBD(const cv::Mat &imRGB,
+                        //   const cv::Mat &imD,
+                        //   const double &timestamp,
+                        //   const vector<std::pair<vector<double>, int>> &detect_result);
 
     cv::Mat GrabImageMonocular(const cv::Mat &im, const double &timestamp);
 

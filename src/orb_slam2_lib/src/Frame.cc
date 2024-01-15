@@ -19,7 +19,6 @@
  */
 
 #include "Frame.h"
-#include "Objectyolo.h"
 #include "Converter.h"
 #include "ORBmatcher.h"
 #include <thread>
@@ -27,54 +26,32 @@
 namespace ORB_SLAM2
 {
 
-long unsigned int Frame::nNextId = 0;
-bool Frame::mbInitialComputations =true;
+long unsigned int Frame::nNextId=0;
+bool Frame::mbInitialComputations=true;
 float Frame::cx, Frame::cy, Frame::fx, Frame::fy, Frame::invfx, Frame::invfy;
 float Frame::mnMinX, Frame::mnMinY, Frame::mnMaxX, Frame::mnMaxY;
 float Frame::mfGridElementWidthInv, Frame::mfGridElementHeightInv;
 
-    Frame::Frame()
-    {
-    }
+Frame::Frame()
+{}
 
-    // Copy Constructor
-    /** @details 另外注意，调用这个函数的时候，这个函数中隐藏的this指针其实是指向目标帧的
-     */
-    Frame::Frame(const Frame &frame)
-        : mpORBvocabulary(frame.mpORBvocabulary),
-          mpORBextractorLeft(frame.mpORBextractorLeft),
-          mpORBextractorRight(frame.mpORBextractorRight),
-          mTimeStamp(frame.mTimeStamp),
-          mK(frame.mK.clone()),               // 深拷贝
-          mDistCoef(frame.mDistCoef.clone()), // 深拷贝
-          mbf(frame.mbf),
-          mb(frame.mb),
-          mThDepth(frame.mThDepth),
-          N(frame.N), mvKeys(frame.mvKeys),
-          mvKeysRight(frame.mvKeysRight),
-          mvKeysUn(frame.mvKeysUn),
-          mvuRight(frame.mvuRight),
-          mvDepth(frame.mvDepth),
-          mBowVec(frame.mBowVec),
-          mFeatVec(frame.mFeatVec),
-          mDescriptors(frame.mDescriptors.clone()),
-          mDescriptorsRight(frame.mDescriptorsRight.clone()),
-          mvpMapPoints(frame.mvpMapPoints),
-          mvbOutlier(frame.mvbOutlier),
-          mnId(frame.mnId),
-          mpReferenceKF(frame.mpReferenceKF),
-          mnScaleLevels(frame.mnScaleLevels),
-          mfScaleFactor(frame.mfScaleFactor),
-          mfLogScaleFactor(frame.mfLogScaleFactor),
-          mvScaleFactors(frame.mvScaleFactors),
-          mvInvScaleFactors(frame.mvInvScaleFactors),
-          mvLevelSigma2(frame.mvLevelSigma2),
-          mvInvLevelSigma2(frame.mvInvLevelSigma2),
-          objects_cur_(frame.objects_cur_) // 深拷贝
-    {
-        for (int i = 0; i < FRAME_GRID_COLS; i++)
-            for (int j = 0; j < FRAME_GRID_ROWS; j++)
-                mGrid[i][j] = frame.mGrid[i][j];
+//Copy Constructor
+Frame::Frame(const Frame &frame)
+    :mpORBvocabulary(frame.mpORBvocabulary), mpORBextractorLeft(frame.mpORBextractorLeft), mpORBextractorRight(frame.mpORBextractorRight),
+     mTimeStamp(frame.mTimeStamp), mK(frame.mK.clone()), mDistCoef(frame.mDistCoef.clone()),
+     mbf(frame.mbf), mb(frame.mb), mThDepth(frame.mThDepth), N(frame.N), mvKeys(frame.mvKeys),
+     mvKeysRight(frame.mvKeysRight), mvKeysUn(frame.mvKeysUn),  mvuRight(frame.mvuRight),
+     mvDepth(frame.mvDepth), mBowVec(frame.mBowVec), mFeatVec(frame.mFeatVec),
+     mDescriptors(frame.mDescriptors.clone()), mDescriptorsRight(frame.mDescriptorsRight.clone()),
+     mvpMapPoints(frame.mvpMapPoints), mvbOutlier(frame.mvbOutlier), mnId(frame.mnId),
+     mpReferenceKF(frame.mpReferenceKF), mnScaleLevels(frame.mnScaleLevels),
+     mfScaleFactor(frame.mfScaleFactor), mfLogScaleFactor(frame.mfLogScaleFactor),
+     mvScaleFactors(frame.mvScaleFactors), mvInvScaleFactors(frame.mvInvScaleFactors),
+     mvLevelSigma2(frame.mvLevelSigma2), mvInvLevelSigma2(frame.mvInvLevelSigma2)
+{
+    for(int i=0;i<FRAME_GRID_COLS;i++)
+        for(int j=0; j<FRAME_GRID_ROWS; j++)
+            mGrid[i][j]=frame.mGrid[i][j];
 
         if (!frame.mTcw.empty())
             SetPose(frame.mTcw);
@@ -203,134 +180,13 @@ float Frame::mfGridElementWidthInv, Frame::mfGridElementHeightInv;
         AssignFeaturesToGrid();
     }
 
-    // hayden: yolo Frame 使用不同参数重载
-    Frame::Frame(const cv::Mat &imGray,
-                 const cv::Mat &imDepth,
-                 const long double &timeStamp,
-                 ORBextractor *extractor,
-                 ORBVocabulary *voc,
-                 cv::Mat &K,
-                 cv::Mat &distCoef,
-                 const float &bf,
-                 const float &thDepth,
-                 const vector<std::pair<vector<double>, int>> &detect_result)
-        : mpORBvocabulary(voc), mpORBextractorLeft(extractor), mpORBextractorRight(static_cast<ORBextractor *>(NULL)),
-          mTimeStamp(timeStamp), mK(K.clone()), mDistCoef(distCoef.clone()), mbf(bf), mThDepth(thDepth)
-    {
-        //*****step0.5 把检测框添加进Frame中,包含了所有的物体.
-        vector<double> vobject_box;
-        int nobject_class;
 
-        for (int k = 0; k < detect_result.size(); ++k)
-        {
-            vobject_box = detect_result[k].first; // 把所有物体检测存在了vobject_box和vobject_class中
-            nobject_class = detect_result[k].second;
-            std::shared_ptr<Object> obj = make_shared<Object>(vobject_box, nobject_class);
-            objects_cur_.push_back(obj);
-        }
-
-        //*****
-
-        // Step 1 帧的ID 自增
-        mnId = nNextId++;
-
-        // Step 2 计算图像金字塔的参数
-        // 获取图像金字塔的层数
-        mnScaleLevels = mpORBextractorLeft->GetLevels();
-        // 获取每层的缩放因子
-        mfScaleFactor = mpORBextractorLeft->GetScaleFactor();
-        // 计算每层缩放因子的自然对数
-        mfLogScaleFactor = log(mfScaleFactor);
-        // 获取各层图像的缩放因子
-        mvScaleFactors = mpORBextractorLeft->GetScaleFactors();
-        // 获取各层图像的缩放因子的倒数
-        mvInvScaleFactors = mpORBextractorLeft->GetInverseScaleFactors();
-        // TODO 也是获取这个不知道有什么实际含义的sigma^2
-        mvLevelSigma2 = mpORBextractorLeft->GetScaleSigmaSquares();
-        // 计算上面获取的sigma^2的倒数
-        mvInvLevelSigma2 = mpORBextractorLeft->GetInverseScaleSigmaSquares();
-
-        /** 3. 提取彩色图像(其实现在已经灰度化成为灰度图像了)的特征点 \n Frame::ExtractORB() */
-
-        // ORB extraction
-        // Step 3 对图像进行提取特征点, 第一个参数0-左图，1-右图
-        ExtractORB(0, imGray); //!!!提取特征点!!!
-
-        // 获取特征点的个数
-        N = mvKeys.size();
-
-        // 如果这一帧没有能够提取出特征点，那么就直接返回了
-        if (mvKeys.empty())
-            return;
-
-        //*******直接检验特征点是否在动态物体的框内
-        // cout << "mvKeys.size() is " << mvKeys.size() << endl;
-        for (int k = 0; k < mvKeys.size(); ++k)
-        {
-            if (IsInDynamic(k) == true && IsInStatic(k) == false)
-            { // 在动态物体框内,但不在静态物体框内
-                vbInDynamic_mvKeys.push_back(true);
-                // cout << "true" << endl;
-                mvKeys[k] = cv::KeyPoint(-1, -1, -1);
-            }
-            else
-            {
-                vbInDynamic_mvKeys.push_back(false);
-                // cout << "false" << endl;
-            }
-        }
-
-        // Step 4 用OpenCV的矫正函数、内参对提取到的特征点进行矫正
-        UndistortKeyPoints();
-
-        //********************
-        // Step 5 获取图像的深度，并且根据这个深度推算其右图中匹配的特征点的视差
-        ComputeStereoFromRGBD(imDepth);
-
-        // 初始化本帧的地图点
-        mvpMapPoints = vector<MapPoint *>(N, static_cast<MapPoint *>(NULL));
-        // 记录地图点是否为外点，初始化均为外点false
-        mvbOutlier = vector<bool>(N, false);
-
-        // This is done only for the first Frame (or after a change in the calibration)
-        //  Step 5 计算去畸变后图像边界，将特征点分配到网格中。这个过程一般是在第一帧或者是相机标定参数发生变化之后进行
-        if (mbInitialComputations)
-        {
-            // 计算去畸变后图像的边界
-            ComputeImageBounds(imGray);
-
-            // 表示一个图像像素相当于多少个图像网格列（宽）
-            mfGridElementWidthInv = static_cast<float>(FRAME_GRID_COLS) / static_cast<float>(mnMaxX - mnMinX);
-            // 表示一个图像像素相当于多少个图像网格行（高）
-            mfGridElementHeightInv = static_cast<float>(FRAME_GRID_ROWS) / static_cast<float>(mnMaxY - mnMinY);
-
-            // 给类的静态成员变量复制
-            fx = K.at<float>(0, 0);
-            fy = K.at<float>(1, 1);
-            cx = K.at<float>(0, 2);
-            cy = K.at<float>(1, 2);
-            // 猜测是因为这种除法计算需要的时间略长，所以这里直接存储了这个中间计算结果
-            invfx = 1.0f / fx;
-            invfy = 1.0f / fy;
-
-            // 特殊的初始化过程完成，标志复位
-            mbInitialComputations = false;
-        }
-
-        // 计算假想的基线长度 baseline= mbf/fx
-        // 后面要对从RGBD相机输入的特征点,结合相机基线长度,焦距,以及点的深度等信息来计算其在假想的"右侧图像"上的匹配点
-        mb = mbf / fx;
-
-        // 将特征点分配到图像网格中
-        AssignFeaturesToGrid();
-    }
-
-    Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor *extractor, ORBVocabulary *voc, cv::Mat &K, cv::Mat &distCoef, const float &bf, const float &thDepth)
-        : mpORBvocabulary(voc), mpORBextractorLeft(extractor), mpORBextractorRight(static_cast<ORBextractor *>(NULL)),
-          mTimeStamp(timeStamp), mK(K.clone()), mDistCoef(distCoef.clone()), mbf(bf), mThDepth(thDepth)
-    {
-        // Frame ID
-        mnId = nNextId++;
+Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extractor,ORBVocabulary* voc, cv::Mat &K, cv::Mat &distCoef, const float &bf, const float &thDepth)
+    :mpORBvocabulary(voc),mpORBextractorLeft(extractor),mpORBextractorRight(static_cast<ORBextractor*>(NULL)),
+     mTimeStamp(timeStamp), mK(K.clone()),mDistCoef(distCoef.clone()), mbf(bf), mThDepth(thDepth)
+{
+    // Frame ID
+    mnId=nNextId++;
 
         // Scale Level Info
         mnScaleLevels = mpORBextractorLeft->GetLevels();
@@ -586,19 +442,15 @@ float Frame::mfGridElementWidthInv, Frame::mfGridElementHeightInv;
         }
     }
 
-    void Frame::ComputeImageBounds(const cv::Mat &imLeft)
+void Frame::ComputeImageBounds(const cv::Mat &imLeft)
+{
+    if(mDistCoef.at<float>(0)!=0.0)
     {
-        if (mDistCoef.at<float>(0) != 0.0)
-        {
-            cv::Mat mat(4, 2, CV_32F);
-            mat.at<float>(0, 0) = 0.0;
-            mat.at<float>(0, 1) = 0.0;
-            mat.at<float>(1, 0) = imLeft.cols;
-            mat.at<float>(1, 1) = 0.0;
-            mat.at<float>(2, 0) = 0.0;
-            mat.at<float>(2, 1) = imLeft.rows;
-            mat.at<float>(3, 0) = imLeft.cols;
-            mat.at<float>(3, 1) = imLeft.rows;
+        cv::Mat mat(4,2,CV_32F);
+        mat.at<float>(0,0)=0.0; mat.at<float>(0,1)=0.0;
+        mat.at<float>(1,0)=imLeft.cols; mat.at<float>(1,1)=0.0;
+        mat.at<float>(2,0)=0.0; mat.at<float>(2,1)=imLeft.rows;
+        mat.at<float>(3,0)=imLeft.cols; mat.at<float>(3,1)=imLeft.rows;
 
             // Undistort corners
             mat = mat.reshape(2);
@@ -855,113 +707,113 @@ float Frame::mfGridElementWidthInv, Frame::mfGridElementHeightInv;
     }
 
     // 反投影物体中心点
-    void Frame::UnprojectObjectCenter(const int &box_id, const cv::Mat &imDepth)
-    {
-        vector<float> obj_center;
-        cv::Mat x3Dc = (cv::Mat_<float>(3, 1) << -1, -1, -1);
-        cv::Mat matCenter3d;
+    // void Frame::UnprojectObjectCenter(const int &box_id, const cv::Mat &imDepth)
+    // {
+    //     vector<float> obj_center;
+    //     cv::Mat x3Dc = (cv::Mat_<float>(3, 1) << -1, -1, -1);
+    //     cv::Mat matCenter3d;
 
-        float u_center = (objects_cur_[box_id]->vdetect_parameter[0] + objects_cur_[box_id]->vdetect_parameter[2]) / 2.0;
-        float v_center = (objects_cur_[box_id]->vdetect_parameter[1] + objects_cur_[box_id]->vdetect_parameter[3]) / 2.0;
-        float z_center = imDepth.at<float>(v_center, u_center);
+    //     float u_center = (objects_cur_[box_id]->vdetect_parameter[0] + objects_cur_[box_id]->vdetect_parameter[2]) / 2.0;
+    //     float v_center = (objects_cur_[box_id]->vdetect_parameter[1] + objects_cur_[box_id]->vdetect_parameter[3]) / 2.0;
+    //     float z_center = imDepth.at<float>(v_center, u_center);
 
-        if (z_center > 0)
-        {
-            const float x = (u_center - cx) * z_center * invfx;
-            const float y = (v_center - cy) * z_center * invfy;
+    //     if (z_center > 0)
+    //     {
+    //         const float x = (u_center - cx) * z_center * invfx;
+    //         const float y = (v_center - cy) * z_center * invfy;
 
-            // 生成三维点（在当前相机坐标系下）
-            x3Dc = (cv::Mat_<float>(3, 1) << x, y, z_center);
+    //         // 生成三维点（在当前相机坐标系下）
+    //         x3Dc = (cv::Mat_<float>(3, 1) << x, y, z_center);
 
-            matCenter3d = mRwc * x3Dc + mOw;
-            // cout << "matCenter3d:  " << endl << matCenter3d << endl;
-            vMcenter_static.push_back(matCenter3d);
-            // return matCenter3d;
-        }
-        // else
-        //     return cv::Mat();
+    //         matCenter3d = mRwc * x3Dc + mOw;
+    //         // cout << "matCenter3d:  " << endl << matCenter3d << endl;
+    //         vMcenter_static.push_back(matCenter3d);
+    //         // return matCenter3d;
+    //     }
+    //     // else
+    //     //     return cv::Mat();
 
-        // 计算在当前相机坐标系下的坐标 guiyihua multi z(where is my chinese input??)
-    }
+    //     // 计算在当前相机坐标系下的坐标 guiyihua multi z(where is my chinese input??)
+    // }
 
     
-    bool Frame::IsInBox(const int &i, int &box_id)
-    { // 判断kp是否在bounding_box_(txt读入的数据)内. objects_cur_存储帧中的object,由frame.cc引入
-        const cv::KeyPoint &kp = mvKeysUn[i];
-        float kp_u = kp.pt.x;
-        float kp_v = kp.pt.y;
-        bool in_box = false;
-        for (int k = 0; k < objects_cur_.size(); ++k)
-        { // 遍历所有物体
-            vector<double> box = objects_cur_[k]->vdetect_parameter;
-            double left = box[0];
-            double top = box[1];
-            double right = box[2];
-            double bottom = box[3];
-            if (kp_u > left - 2 && kp_u < right + 2 && kp_v > top - 2 && kp_v < bottom + 2)
-            {
-                in_box = true;
-                box_id = k;
-                break;
-            }
-        }
-        return in_box;
-    }
+    // bool Frame::IsInBox(const int &i, int &box_id)
+    // { // 判断kp是否在bounding_box_(txt读入的数据)内. objects_cur_存储帧中的object,由frame.cc引入
+    //     const cv::KeyPoint &kp = mvKeysUn[i];
+    //     float kp_u = kp.pt.x;
+    //     float kp_v = kp.pt.y;
+    //     bool in_box = false;
+    //     for (int k = 0; k < objects_cur_.size(); ++k)
+    //     { // 遍历所有物体
+    //         vector<double> box = objects_cur_[k]->vdetect_parameter;
+    //         double left = box[0];
+    //         double top = box[1];
+    //         double right = box[2];
+    //         double bottom = box[3];
+    //         if (kp_u > left - 2 && kp_u < right + 2 && kp_v > top - 2 && kp_v < bottom + 2)
+    //         {
+    //             in_box = true;
+    //             box_id = k;
+    //             break;
+    //         }
+    //     }
+    //     return in_box;
+    // }
 
-    bool Frame::IsInDynamic(const int &i)
-    { // 判断kp是否在bounding_box_(txt读入的数据)内. objects_cur_存储帧中的object,由frame.cc引入
-        const cv::KeyPoint &kp = mvKeys[i];
-        float kp_u = kp.pt.x;
-        float kp_v = kp.pt.y;
-        bool in_dynamic = false;
+    // bool Frame::IsInDynamic(const int &i)
+    // { // 判断kp是否在bounding_box_(txt读入的数据)内. objects_cur_存储帧中的object,由frame.cc引入
+    //     const cv::KeyPoint &kp = mvKeys[i];
+    //     float kp_u = kp.pt.x;
+    //     float kp_v = kp.pt.y;
+    //     bool in_dynamic = false;
 
-        for (int k = 0; k < objects_cur_.size(); ++k)
-        { // 遍历所有物体
-            int obj_class = objects_cur_[k]->ndetect_class;
+    //     for (int k = 0; k < objects_cur_.size(); ++k)
+    //     { // 遍历所有物体
+    //         int obj_class = objects_cur_[k]->ndetect_class;
 
-            if (obj_class == 3)
-            {
-                vector<double> box = objects_cur_[k]->vdetect_parameter; // 获取物体框
-                double left = box[0];
-                double top = box[1];
-                double right = box[2];
-                double bottom = box[3];
+    //         if (obj_class == 3)
+    //         {
+    //             vector<double> box = objects_cur_[k]->vdetect_parameter; // 获取物体框
+    //             double left = box[0];
+    //             double top = box[1];
+    //             double right = box[2];
+    //             double bottom = box[3];
 
-                if (kp_u > left - 2 && kp_u < right + 2 && kp_v > top - 2 && kp_v < bottom + 2)
-                {
-                    in_dynamic = true;
-                }
-            }
-        }
-        return in_dynamic;
-    }
+    //             if (kp_u > left - 2 && kp_u < right + 2 && kp_v > top - 2 && kp_v < bottom + 2)
+    //             {
+    //                 in_dynamic = true;
+    //             }
+    //         }
+    //     }
+    //     return in_dynamic;
+    // }
 
-    bool Frame::IsInStatic(const int &i)
-    { // 判断kp是否在bounding_box_(txt读入的数据)内. objects_cur_存储帧中的object,由frame.cc引入
-        const cv::KeyPoint &kp = mvKeys[i];
-        float kp_u = kp.pt.x;
-        float kp_v = kp.pt.y;
-        bool in_static = false;
+    // bool Frame::IsInStatic(const int &i)
+    // { // 判断kp是否在bounding_box_(txt读入的数据)内. objects_cur_存储帧中的object,由frame.cc引入
+    //     const cv::KeyPoint &kp = mvKeys[i];
+    //     float kp_u = kp.pt.x;
+    //     float kp_v = kp.pt.y;
+    //     bool in_static = false;
 
-        for (int k = 0; k < objects_cur_.size(); ++k)
-        { // 遍历所有物体
-            int obj_class = objects_cur_[k]->ndetect_class;
+    //     for (int k = 0; k < objects_cur_.size(); ++k)
+    //     { // 遍历所有物体
+    //         int obj_class = objects_cur_[k]->ndetect_class;
 
-            if (obj_class == 1)
-            {
-                vector<double> box = objects_cur_[k]->vdetect_parameter; // 获取物体框
-                double left = box[0];
-                double top = box[1];
-                double right = box[2];
-                double bottom = box[3];
+    //         if (obj_class == 1)
+    //         {
+    //             vector<double> box = objects_cur_[k]->vdetect_parameter; // 获取物体框
+    //             double left = box[0];
+    //             double top = box[1];
+    //             double right = box[2];
+    //             double bottom = box[3];
 
-                if (kp_u > left - 2 && kp_u < right + 2 && kp_v > top - 2 && kp_v < bottom + 2)
-                {
-                    in_static = true;
-                }
-            }
-        }
-        return in_static;
-    }
+    //             if (kp_u > left - 2 && kp_u < right + 2 && kp_v > top - 2 && kp_v < bottom + 2)
+    //             {
+    //                 in_static = true;
+    //             }
+    //         }
+    //     }
+    //     return in_static;
+    // }
 
 } // namespace ORB_SLAM

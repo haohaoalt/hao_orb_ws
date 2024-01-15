@@ -1,12 +1,3 @@
-/*
- * @Author: https://github.com/haohaoalt
- * @Date: 2023-10-19 16:11:12
- * @LastEditors: haohaoalt haohaoalt@163.com
- * @LastEditTime: 2023-10-19 16:21:17
- * @FilePath: /hao_orb_ws/src/orb_slam2_lib/include/Objectyolo.h
- * @Description: 
- * Copyright (c) 2023 by haohaoalt@163.com, All Rights Reserved. 
- */
 #ifndef MYSLAM_OBJECT_YOLO_H
 #define MYSLAM_OBJECT_YOLO_H
 

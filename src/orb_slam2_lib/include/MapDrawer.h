@@ -70,15 +70,15 @@ public:
      */
     void DrawCurrentCamera(pangolin::OpenGlMatrix &Twc);
 
-    void DrawObjStatic();
+    // void DrawObjStatic();
 
-    void DrawCurrentCamera(pangolin::OpenGlMatrix &Twc);
+    // void DrawCurrentCamera(pangolin::OpenGlMatrix &Twc);
     /**
      * @brief 设置当前帧的相机位姿
      *
      * @param[in] Tcw 位姿矩阵
      */
-    void SetCurrentCameraPose(const cv::Mat &Tcw);
+    // void SetCurrentCameraPose(const cv::Mat &Tcw);
     void SetReferenceKeyFrame(KeyFrame *pKF);
     void GetCurrentOpenGLCameraMatrix(pangolin::OpenGlMatrix &M);
 

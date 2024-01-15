@@ -1509,23 +1509,23 @@ namespace ORB_SLAM2
                         nmatches++;
 
 //hayden: Add yolo in ORBmatcher.cc
-                        int box_id; // 可以使用objects_cur_[box_id]定位到物体
-                        if (CurrentFrame.IsInBox(bestIdx2, box_id))
-                        {
-                            // cout << CurrentFrame.objects_cur_[box_id]->ndetect_class << endl;
-                            CurrentFrame.matches_in_box.emplace(bestIdx2, make_pair(i, box_id));
-                            // CurrentFrame.points_in_box[box_id].push_back(bestIdx2);
+                        // int box_id; // 可以使用objects_cur_[box_id]定位到物体
+                        // if (CurrentFrame.IsInBox(bestIdx2, box_id))
+                        // {
+                        //     // cout << CurrentFrame.objects_cur_[box_id]->ndetect_class << endl;
+                        //     CurrentFrame.matches_in_box.emplace(bestIdx2, make_pair(i, box_id));
+                        //     // CurrentFrame.points_in_box[box_id].push_back(bestIdx2);
 
-                            if (CurrentFrame.objects_cur_[box_id]->ndetect_class == 3)
-                            {
-                                CurrentFrame.matches_in_dynamic.emplace(bestIdx2, make_pair(i, box_id));
-                            }
-                            // CurrentFrame.points_in_box[box_id].push_back(bestIdx2);
-                        }
-                        else
-                        {
-                            CurrentFrame.matches_out_box.emplace(bestIdx2, i);
-                        }
+                        //     if (CurrentFrame.objects_cur_[box_id]->ndetect_class == 3)
+                        //     {
+                        //         CurrentFrame.matches_in_dynamic.emplace(bestIdx2, make_pair(i, box_id));
+                        //     }
+                        //     // CurrentFrame.points_in_box[box_id].push_back(bestIdx2);
+                        // }
+                        // else
+                        // {
+                        //     CurrentFrame.matches_out_box.emplace(bestIdx2, i);
+                        // }
 
                         // Step 6 计算匹配点旋转角度差所在的直方图
                         if (mbCheckOrientation)

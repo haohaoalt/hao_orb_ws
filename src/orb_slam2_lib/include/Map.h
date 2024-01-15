@@ -147,11 +147,11 @@ namespace ORB_SLAM2
         void clear();
 
         // hayden: Add func in Map.h
-        void AddObjCenters(MapPoint *pMP);
+        // void AddObjCenters(MapPoint *pMP);
 
-        void EraseAllObjCenters();
+        // void EraseAllObjCenters();
 
-        vector<MapPoint *> GetAllObjCenters();
+        // vector<MapPoint *> GetAllObjCenters();
 
         // 保存了最初始的关键帧
         vector<KeyFrame *> mvpKeyFrameOrigins;
@@ -164,7 +164,7 @@ namespace ORB_SLAM2
         //? 如果插入的地图点id不同,但是由于误差等原因,产生的地图点非常相近,这个时候怎么处理?
         std::mutex mMutexPointCreation;
 
-        std::set<MapPoint *> mspObjCenters;
+        // std::set<MapPoint *> mspObjCenters;
 
     private:
         // give boost::serial::access access to all private

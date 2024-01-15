@@ -43,12 +43,6 @@
 //used to measure running time of SLAM system
 #include <time.h>
 
-//haoz to publish orbslam2 pose
-#include<tf/transform_broadcaster.h>
-#include"Converter.h"
-#include<nav_msgs/Path.h>
-
-
 using namespace std;
 
 class ImageGrabber
@@ -63,15 +57,12 @@ public:
     bool do_rectify;
     cv::Mat M1l,M2l,M1r,M2r;
 };
-ros::Publisher pose_pub;
-nav_msgs::Path stereo_path;
-ros::Publisher stereo_path_pub;
-
 
 int main(int argc, char **argv)
 {
-    
+
     //  ================== Set stack size =============//
+    // Fix map saving/loading problem when large Maps are processed
     cout << " ros_stereo main set stack size" << endl;
     const rlim_t kStackSize = 16L * 2014L * 1024L;
     struct rlimit rl;
@@ -96,26 +87,25 @@ int main(int argc, char **argv)
     {
         ros::console::notifyLoggerLevelsChanged();
     }
-    // ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug);
+    ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug);
 
-    // ROS_DEBUG_STREAM("DEBUG message.");
-    // ROS_INFO_STREAM("INFO message.");
-    // ROS_WARN_STREAM("WARN message.");
-    // ROS_ERROR_STREAM("ERROR message.");
-    // ROS_FATAL_STREAM("FATAL message.");
-    // ROS_INFO("==========================================");
-    // cout << "\033[32m" << "hello world " << "\033[0m" << endl;
+    ROS_DEBUG_STREAM("DEBUG message.");
+    ROS_INFO_STREAM("INFO message.");
+    ROS_WARN_STREAM("WARN message.");
+    ROS_ERROR_STREAM("ERROR message.");
+    ROS_FATAL_STREAM("FATAL message.");
+    ROS_INFO("==========================================");
+    cout << "\033[32m" << "hello world " << "\033[0m" << endl;
     ros::start();
-    if(argc != 4)
+    bool bFileName = (((argc - 4) % 2) == 1);
+    if(argc <= 4)
     {
         cerr << endl << "Usage: rosrun ORB_SLAM2 Stereo path_to_vocabulary path_to_settings do_rectify" << endl;
         ros::shutdown();
         return 1;
     }
 
-
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
-    //hayden freq = 100hz
     const double freq = 100.0;
     // Set up a namespace for topics
     ros::NodeHandle nh("/orb_slam2");
@@ -171,8 +161,8 @@ int main(int argc, char **argv)
     //nh is startup and shutdown of the internal node inside a roscpp program
 
     //set subscribed topics, names changed for ZED Topics
-    message_filters::Subscriber<sensor_msgs::Image> left_sub(nh, "kitti/camera_gray_left/image_raw", 1);
-    message_filters::Subscriber<sensor_msgs::Image> right_sub(nh, "kitti/camera_gray_right/image_raw", 1);
+    message_filters::Subscriber<sensor_msgs::Image> left_sub(nh, "/zed2i/zed_node/left_raw/image_raw_gray", 1);
+    message_filters::Subscriber<sensor_msgs::Image> right_sub(nh, "/zed2i/zed_node/right_raw/image_raw_gray", 1);
 
     //a policy used by message_filters::sync::Synchronizer to match messages coming on a set of topics
     //can match messages even if they have different time stamps
@@ -182,10 +172,6 @@ int main(int argc, char **argv)
     //and outputs them in the form of a single callback that takes the same number of channels
     message_filters::Synchronizer<sync_pol> sync(sync_pol(10), left_sub,right_sub);
     sync.registerCallback(boost::bind(&ImageGrabber::GrabStereo,&igb,_1,_2));
-
-    //haoz add pose pub and stereo_path_pub
-    pose_pub = nh.advertise<geometry_msgs::PoseStamped>("ORB_SLAM/pose",5);
-    stereo_path_pub = nh.advertise<nav_msgs::Path>("/orbslam2/camera_path",10);
 
 
     clock_t tStart = clock();
@@ -246,29 +232,7 @@ void ImageGrabber::GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft,const se
     }
     else
     {
-        // hayden 返回得到一个4x4的矩阵信息，该矩阵包含了三个旋转分量以及三个平移分量。我们对该矩阵进行处理并发布出最后的位姿信息：
-        cv::Mat Tcw;
-        // hayden ORB_SLAM2中的位姿信息由下列函数返回，将其转换为所需的数据类型发布出去
-        Tcw = mpSLAM->TrackStereo(cv_ptrLeft->image,cv_ptrRight->image,cv_ptrLeft->header.stamp.toSec());
-        geometry_msgs::PoseStamped pose;
-        pose.header.stamp = ros::Time::now();
-        pose.header.frame_id = "odom2";
-
-        cv::Mat Rwc = Tcw.rowRange(0, 3).colRange(0, 3).t(); // Rotation information
-        cv::Mat twc = -Rwc * Tcw.rowRange(0, 3).col(3);      // translation information
-        vector<float> q = ORB_SLAM2::Converter::toQuaternion(Rwc);
-
-        tf::Transform new_transform;
-        new_transform.setOrigin(tf::Vector3(twc.at<float>(0, 0), twc.at<float>(0, 1), twc.at<float>(0, 2)));
-        tf::Quaternion quaternion(q[0], q[1], q[2], q[3]);
-        new_transform.setRotation(quaternion);
-        tf::poseTFToMsg(new_transform, pose.pose);
-        pose_pub.publish(pose);
-
-        stereo_path.header.frame_id = "odom2";
-        stereo_path.header.stamp = ros::Time::now();
-        stereo_path.poses.push_back(pose);
-        stereo_path_pub.publish(stereo_path);
+        mpSLAM->TrackStereo(cv_ptrLeft->image, cv_ptrRight->image, cv_ptrLeft->header.stamp.toSec());
     }
 
 }

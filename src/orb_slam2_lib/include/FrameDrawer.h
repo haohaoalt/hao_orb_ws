@@ -73,9 +73,9 @@ namespace ORB_SLAM2
         // 当前帧中的特征点
         std::vector<cv::KeyPoint> mvCurrentKeys;
 
-        map<int, std::pair<int, int>> matches_in_box;
-        vector<std::shared_ptr<Object>> objects_curFD;
-        vector<bool> vbInDynamic_mvKeys; // 位于动态物体区域内的特征点(未做动态检验)
+        // map<int, std::pair<int, int>> matches_in_box;
+        // vector<std::shared_ptr<Object>> objects_curFD;
+        // vector<bool> vbInDynamic_mvKeys; // 位于动态物体区域内的特征点(未做动态检验)
 
         // mvbMap当前帧的特征点在地图中是否出现;mvbVO是表示地图中没有出现,但是在当前帧中是第一次被观测得到的点
         std::vector<bool> mvbMap, mvbVO;
