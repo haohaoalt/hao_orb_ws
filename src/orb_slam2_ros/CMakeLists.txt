@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.10)
 project(orb_slam2_ros)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -Wall  -O3 -march=native ")
@@ -8,11 +8,10 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall  -O3 -march=native")
 #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -Wall  -O0 -march=native ")
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall  -O0 -march=native")
 
-
 ADD_DEFINITIONS("-std=c++11")
 
 find_package(OpenCV REQUIRED)
-#find_package(Pangolin REQUIRED)
+find_package(Pangolin REQUIRED)
 
 find_package(catkin REQUIRED COMPONENTS
   orb_slam2_lib
@@ -68,17 +67,6 @@ add_dependencies(Mono ${${PROJECT_NAME}_EXPORTED_TARGETS})
 target_link_libraries(Mono
   ${LIBS}
 )
-
-# Node for monocular camera (Augmented Reality Demo)
-#add_executable(MonoAR
-#src/AR/ros_mono_ar.cc
-#src/AR/ViewerAR.h
-#src/AR/ViewerAR.cc
-#)
-#
-#target_link_libraries(MonoAR
-#${LIBS}
-#)
 
 # Node for stereo camera
 add_executable(Stereo

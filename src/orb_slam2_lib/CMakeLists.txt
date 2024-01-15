@@ -78,6 +78,7 @@ set(SRCS
 
 set(LIBS
   ${OpenCV_LIBS}
+  ${Pangolin_LIBRARIES}
   DBoW2
   g2o
 )
