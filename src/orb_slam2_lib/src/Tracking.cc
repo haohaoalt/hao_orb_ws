@@ -34,7 +34,10 @@
 // Step : 如果内点较少, 则通过投影的方式对之前未匹配的点进行匹配, 再进行优化
 
 #include "Tracking.h"
+#include <opencv2/core/types_c.h>
 
+#include <opencv2/opencv.hpp>
+#include <opencv2/videoio.hpp>
 #include <opencv2/core/core.hpp>
 #include <opencv2/features2d/features2d.hpp>
 
@@ -198,26 +201,26 @@ namespace ORB_SLAM2
         {
             if (mbRGB)
             {
-                cvtColor(mImGray, mImGray, CV_RGB2GRAY);
-                cvtColor(imGrayRight, imGrayRight, CV_RGB2GRAY);
+                cvtColor(mImGray, mImGray, cv::COLOR_RGB2GRAY);
+                cvtColor(imGrayRight, imGrayRight, cv::COLOR_RGB2GRAY);
             }
             else
             {
-                cvtColor(mImGray, mImGray, CV_BGR2GRAY);
-                cvtColor(imGrayRight, imGrayRight, CV_BGR2GRAY);
+                cvtColor(mImGray, mImGray, cv::COLOR_BGR2GRAY);
+                cvtColor(imGrayRight, imGrayRight, cv::COLOR_BGR2GRAY);
             }
         }
         else if (mImGray.channels() == 4)
         {
             if (mbRGB)
             {
-                cvtColor(mImGray, mImGray, CV_RGBA2GRAY);
-                cvtColor(imGrayRight, imGrayRight, CV_RGBA2GRAY);
+                cvtColor(mImGray, mImGray, cv::COLOR_RGB2GRAY);
+                cvtColor(imGrayRight, imGrayRight, cv::COLOR_RGB2GRAY);
             }
             else
             {
-                cvtColor(mImGray, mImGray, CV_BGRA2GRAY);
-                cvtColor(imGrayRight, imGrayRight, CV_BGRA2GRAY);
+                cvtColor(mImGray, mImGray, cv::COLOR_RGB2GRAY);
+                cvtColor(imGrayRight, imGrayRight, cv::COLOR_RGB2GRAY);
             }
         }
         // Step 2 ：构造Frame
@@ -250,16 +253,16 @@ namespace ORB_SLAM2
         if (mImGray.channels() == 3)
         {
             if (mbRGB)
-                cvtColor(mImGray, mImGray, CV_RGB2GRAY);
+                cvtColor(mImGray, mImGray, cv::COLOR_RGB2GRAY);
             else
-                cvtColor(mImGray, mImGray, CV_BGR2GRAY);
+                cvtColor(mImGray, mImGray, cv::COLOR_BGR2GRAY);
         }
         else if (mImGray.channels() == 4)
         {
             if (mbRGB)
-                cvtColor(mImGray, mImGray, CV_RGBA2GRAY);
+                cvtColor(mImGray, mImGray, cv::COLOR_RGBA2GRAY);
             else
-                cvtColor(mImGray, mImGray, CV_BGRA2GRAY);
+                cvtColor(mImGray, mImGray, cv::COLOR_RGB2GRAY);
         }
 
         if ((fabs(mDepthMapFactor - 1.0f) > 1e-5) || imDepth.type() != CV_32F)
@@ -335,16 +338,16 @@ namespace ORB_SLAM2
         if (mImGray.channels() == 3)
         {
             if (mbRGB)
-                cvtColor(mImGray, mImGray, CV_RGB2GRAY);
+                cvtColor(mImGray, mImGray, cv::COLOR_RGB2GRAY);
             else
-                cvtColor(mImGray, mImGray, CV_BGR2GRAY);
+                cvtColor(mImGray, mImGray, cv::COLOR_BGR2GRAY);
         }
         else if (mImGray.channels() == 4)
         {
             if (mbRGB)
-                cvtColor(mImGray, mImGray, CV_RGBA2GRAY);
+                cvtColor(mImGray, mImGray, cv::COLOR_RGBA2GRAY);
             else
-                cvtColor(mImGray, mImGray, CV_BGRA2GRAY);
+                cvtColor(mImGray, mImGray, cv::COLOR_RGBA2GRAY);
         }
 
         if (mState == NOT_INITIALIZED || mState == NO_IMAGES_YET)

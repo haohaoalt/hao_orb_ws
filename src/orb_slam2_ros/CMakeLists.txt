@@ -10,7 +10,17 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall  -O3 -march=native")
 
 ADD_DEFINITIONS("-std=c++11")
 
-find_package(OpenCV REQUIRED)
+# 寻找 OpenCV 4.2
+find_package(OpenCV 4.2 QUIET)
+if(NOT OpenCV_FOUND)
+    # 如果没有找到，尝试寻找 OpenCV 3.2
+    find_package(OpenCV 3.2 QUIET)
+    if(NOT OpenCV_FOUND)
+        # 如果还是没有找到，报错
+        message(FATAL_ERROR "OpenCV not found.")
+    endif()
+endif()
+
 find_package(Pangolin REQUIRED)
 
 find_package(catkin REQUIRED COMPONENTS

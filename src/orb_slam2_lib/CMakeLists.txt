@@ -28,12 +28,20 @@ endif()
 
 add_subdirectory(Thirdparty/DBoW2)
 add_subdirectory(Thirdparty/g2o)
+
 # set(OpenCV_DIR "/home/slam007/app/opencv3.4.5/install/share/OpenCV")
-find_package(OpenCV REQUIRED)
+# 寻找 OpenCV 4.2
+find_package(OpenCV 4.2 QUIET)
+if(NOT OpenCV_FOUND)
+    # 如果没有找到，尝试寻找 OpenCV 3.2
+    find_package(OpenCV 3.2 QUIET)
+    if(NOT OpenCV_FOUND)
+        # 如果还是没有找到，报错
+        message(FATAL_ERROR "OpenCV not found.")
+    endif()
+endif()
 
 # eigen
-# set(EIGEN_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/ThirdParty/eigen3.3.2")
-# find_package(Pangolin REQUIRED)
 find_package(Eigen3 REQUIRED)
 
 find_package(catkin REQUIRED)

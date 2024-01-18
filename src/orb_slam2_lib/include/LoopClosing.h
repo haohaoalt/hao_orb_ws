@@ -26,6 +26,7 @@
 #include "Map.h"
 #include "ORBVocabulary.h"
 #include "Tracking.h"
+#include <opencv2/core/types_c.h>
 
 #include "KeyFrameDatabase.h"
 
@@ -46,8 +47,9 @@ class LoopClosing
 public:
 
     typedef pair<set<KeyFrame*>,int> ConsistentGroup;
-    typedef map<KeyFrame*,g2o::Sim3,std::less<KeyFrame*>,
-        Eigen::aligned_allocator<std::pair<const KeyFrame*, g2o::Sim3> > > KeyFrameAndPose;
+    typedef map<KeyFrame *, g2o::Sim3, std::less<KeyFrame *>,
+        // Eigen::aligned_allocator<std::pair<const KeyFrame*, g2o::Sim3> > > KeyFrameAndPose; note for opencv3 to 4
+        Eigen::aligned_allocator<std::pair<KeyFrame *const, g2o::Sim3>>>KeyFrameAndPose;
 
 public:
 

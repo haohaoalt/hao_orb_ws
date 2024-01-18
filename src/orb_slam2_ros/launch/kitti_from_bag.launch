@@ -6,7 +6,8 @@
 <arg name="sequence" default="g07_kitti_2011_09_30_drive_0027_synced"/>
 
 <!-- rosbag arguments -->
-<arg name="bag_data_path"   default="/home/ubuntu/Dev/Dataset/KITTI/rosbag/g00_kitti_2011_10_03_drive_0027_synced.bag"/>
+<arg name="bag_data_path" default="/media/hayden/Friday/dataset/KITTI/rosbag/$(arg sequence).bag"/>
+
 
 
 <!-- ORBSLAM arguments -->
