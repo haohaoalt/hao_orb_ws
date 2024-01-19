@@ -115,8 +115,8 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
         cout << endl << "Loading ORB Vocabulary. This could take a while..." << endl;
 
         mpVocabulary = new ORBVocabulary();
-        // bool bVocLoad = mpVocabulary->loadFromTextFile(strVocFile);
-        bool bVocLoad = mpVocabulary->loadFromBinaryFile(strVocFile);
+        // bool bVocLoad = mpVocabulary->loadFromTextFile(strVocFile);  //txt加载
+        bool bVocLoad = mpVocabulary->loadFromBinaryFile(strVocFile); // bin加载
         if(!bVocLoad)
         {
             cerr << "Wrong path to vocabulary. " << endl;
