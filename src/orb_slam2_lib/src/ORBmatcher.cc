@@ -1508,7 +1508,7 @@ namespace ORB_SLAM2
                         CurrentFrame.mvpMapPoints[bestIdx2] = pMP;
                         nmatches++;
 
-//hayden: Add yolo in ORBmatcher.cc
+//NOTE: Add yolo in ORBmatcher.cc
                         // int box_id; // 可以使用objects_cur_[box_id]定位到物体
                         // if (CurrentFrame.IsInBox(bestIdx2, box_id))
                         // {

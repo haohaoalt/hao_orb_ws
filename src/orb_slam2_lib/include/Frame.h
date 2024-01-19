@@ -264,7 +264,7 @@ public:
     vector<float> mvLevelSigma2;
     vector<float> mvInvLevelSigma2;
 
-    // hayden matches_in_box in Frame.h
+    // NOTE matches_in_box in Frame.h
     // cv::Mat imDepth;
     //  vector<std::shared_ptr<Object>> objects_cur_detect_;//用于光流的物体
     // vector<std::shared_ptr<Object>> objects_cur_; // 存储帧中的object

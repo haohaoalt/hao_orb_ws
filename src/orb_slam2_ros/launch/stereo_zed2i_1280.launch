@@ -42,6 +42,6 @@
 </node>
 
 <!-- rqt_image_view for visualization of extracted ORB featues in camera frame -->
-<!-- <node pkg="rqt_image_view" type="rqt_image_view" name="rqt_image_view" args="image:=/orb_slam2/frame" if="$(arg visualize_orb_features)" output="screen"/> -->
+<node pkg="rqt_image_view" type="rqt_image_view" name="rqt_image_view" args="image:=/orb_slam2/frame" if="$(arg visualize_orb_features)" output="screen"/>
 
 </launch>

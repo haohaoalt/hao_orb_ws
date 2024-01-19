@@ -366,7 +366,7 @@ int Optimizer::PoseOptimization(Frame *pFrame)
 
     // We perform 4 optimizations, after each optimization we classify observation as inlier/outlier
     // At the next optimization, outliers are not included, but at the end they can be classified as inliers again.
-    //hayden: 执行四次优化，每次优化的阈值选择来自卡方分布，对应单目投影的自由度为2，双目投影的自由度为3
+    //TODO: 执行四次优化，每次优化的阈值选择来自卡方分布，对应单目投影的自由度为2，双目投影的自由度为3
     const float chi2Mono[4]={5.991,5.991,5.991,5.991};
     const float chi2Stereo[4]={7.815,7.815,7.815, 7.815};
     const int its[4]={10,10,10,10};    

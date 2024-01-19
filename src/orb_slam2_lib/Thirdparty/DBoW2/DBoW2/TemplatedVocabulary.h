@@ -1436,30 +1436,6 @@ bool TemplatedVocabulary<TDescriptor,F>::loadFromTextFile(const std::string &fil
 
 }
 
-// --------------------------------------------------------------------------
-
-template<class TDescriptor, class F>
-void TemplatedVocabulary<TDescriptor,F>::saveToTextFile(const std::string &filename) const
-{
-    fstream f;
-    f.open(filename.c_str(),ios_base::out);
-    f << m_k << " " << m_L << " " << " " << m_scoring << " " << m_weighting << endl;
-
-    for(size_t i=1; i<m_nodes.size();i++)
-    {
-        const Node& node = m_nodes[i];
-
-        f << node.parent << " ";
-        if(node.isLeaf())
-            f << 1 << " ";
-        else
-            f << 0 << " ";
-
-        f << F::toString(node.descriptor) << " " << (double)node.weight << endl;
-    }
-
-    f.close();
-}
 
 // --------------------------------------------------------------------------
 
@@ -1512,6 +1488,29 @@ bool TemplatedVocabulary<TDescriptor,F>::loadFromBinaryFile(const std::string &f
 
 
 // --------------------------------------------------------------------------
+
+template<class TDescriptor, class F>
+void TemplatedVocabulary<TDescriptor,F>::saveToTextFile(const std::string &filename) const
+{
+    fstream f;
+    f.open(filename.c_str(),ios_base::out);
+    f << m_k << " " << m_L << " " << " " << m_scoring << " " << m_weighting << endl;
+
+    for(size_t i=1; i<m_nodes.size();i++)
+    {
+        const Node& node = m_nodes[i];
+
+        f << node.parent << " ";
+        if(node.isLeaf())
+            f << 1 << " ";
+        else
+            f << 0 << " ";
+
+        f << F::toString(node.descriptor) << " " << (double)node.weight << endl;
+    }
+
+    f.close();
+}
 
 template<class TDescriptor, class F>
 void TemplatedVocabulary<TDescriptor,F>::saveToBinaryFile(const std::string &filename) const {

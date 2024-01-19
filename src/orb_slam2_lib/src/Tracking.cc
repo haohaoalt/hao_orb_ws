@@ -59,15 +59,16 @@ using namespace std;
 namespace ORB_SLAM2
 {
 
-    Tracking::Tracking(ORBVocabulary *pVoc,
-                       Map *pMap,
-                       KeyFrameDatabase *pKFDB,
-                       const string &strSettingPath,
-                       int sensor, bool bReuseMap) : mState(NO_IMAGES_YET), mSensor(sensor), mbOnlyTracking(false), mbVO(false), mpORBVocabulary(pVoc),
-                                                     mpKeyFrameDB(pKFDB), mpInitializer(nullptr), mpSystem(nullptr),
-                                                     mpFrameSubscriber(nullptr), mpMapPublisher(nullptr), mpMap(pMap), mnLastRelocFrameId(0)
-    {
-        // Load camera parameters from settings file
+Tracking::Tracking(ORBVocabulary *pVoc,
+                   Map *pMap,
+                   KeyFrameDatabase *pKFDB,
+                   const string &strSettingPath,
+                   int sensor, bool bReuseMap) :
+    mState(NO_IMAGES_YET), mSensor(sensor), mbOnlyTracking(false), mbVO(false), mpORBVocabulary(pVoc),
+    mpKeyFrameDB(pKFDB), mpInitializer(nullptr), mpSystem(nullptr),
+    mpFrameSubscriber(nullptr), mpMapPublisher(nullptr), mpMap(pMap), mnLastRelocFrameId(0)
+{
+    // Load camera parameters from settings file
 
         cv::FileStorage fSettings(strSettingPath, cv::FileStorage::READ);
         float fx = fSettings["Camera.fx"];
@@ -239,7 +240,7 @@ namespace ORB_SLAM2
 
         return mCurrentFrame.mTcw.clone();
     }
-    // hayden Tracking::GrabImageRGBD
+    // NOTE Tracking::GrabImageRGBD
     //  输入左目RGB或RGBA图像和深度图
     //  1、将图像转为mImGray和imDepth并初始化mCurrentFrame
     //  2、进行tracking过程
@@ -565,7 +566,7 @@ namespace ORB_SLAM2
                 if (mpMapPublisher)
                     mpMapPublisher->SetCurrentCameraPose(mCurrentFrame.mTcw);
 
-                // hayden: Add code in Tracking.cc
+                // NOTE: Add code in Tracking.cc
                 // mpMap->EraseAllObjCenters();
                 // // cv::Mat center3d;
                 // int a = 0;
@@ -586,7 +587,7 @@ namespace ORB_SLAM2
                 //     mpMap->AddObjCenters(pNewMP);
                 //     // cout << "!1" << endl;
                 // }
-                // hayden: End code in Tracking.cc
+                // NOTE: End code in Tracking.cc
 
                 // Clean VO matches
                 // Step 6：清除观测不到的地图点
@@ -1502,41 +1503,41 @@ namespace ORB_SLAM2
     bool Tracking::Relocalization()
     {
         // Compute Bag of Words Vector
-        // hayden Tracking Step 1：计算当前帧特征点的词袋向量
+        // NOTE Tracking Step 1：计算当前帧特征点的词袋向量
         mCurrentFrame.ComputeBoW();
 
         // Relocalization is performed when tracking is lost
         // Track Lost: Query KeyFrame Database for keyframe candidates for relocalisation
         cout << " =========== Tracking::Relocalization ============== " << endl;
-        // hayden Tracking Step 2: 用词袋找到与当前帧相似的候选关键帧
+        // NOTE Tracking Step 2: 用词袋找到与当前帧相似的候选关键帧
         vector<KeyFrame *> vpCandidateKFs = mpKeyFrameDB->DetectRelocalizationCandidates(&mCurrentFrame);
 
         if (vpCandidateKFs.empty())
             return false;
-        // hayden 定义 nKFs 为候选关键帧的数量.
+        // NOTE 定义 nKFs 为候选关键帧的数量.
         const int nKFs = vpCandidateKFs.size();
 
         // We perform first an ORB matching with each candidate
         // If enough matches are found we setup a PnP solver
-        // hayden 定义 matcher 最小距离 < 0.75次小距离, 并检查旋转
+        // NOTE 定义 matcher 最小距离 < 0.75次小距离, 并检查旋转
         ORBmatcher matcher(0.75, true);
 
-        // hayden 定义vpPnPsolvers: 记录每一个关键帧的solver
+        // NOTE 定义vpPnPsolvers: 记录每一个关键帧的solver
         vector<PnPsolver *> vpPnPsolvers;
         vpPnPsolvers.resize(nKFs);
 
-        // hayden 定义vvpMapPointMatches: 记录每个关键帧和当前帧中特征点的匹配关系
+        // NOTE 定义vvpMapPointMatches: 记录每个关键帧和当前帧中特征点的匹配关系
         vector<vector<MapPoint *>> vvpMapPointMatches;
         vvpMapPointMatches.resize(nKFs);
 
-        // hayden 定义vbDiscarded: 标记放弃的关键帧
+        // NOTE 定义vbDiscarded: 标记放弃的关键帧
 
         vector<bool> vbDiscarded;
         vbDiscarded.resize(nKFs);
-        // hayden 定义 nCandidates: 记录有效的候选关键帧数目
+        // NOTE 定义 nCandidates: 记录有效的候选关键帧数目
 
         int nCandidates = 0;
-        // hayden Tracking Step 3: 遍历所有的候选关键帧, 通过词袋进行快速匹配, 用匹配结果初始化PnP Solver.
+        // NOTE Tracking Step 3: 遍历所有的候选关键帧, 通过词袋进行快速匹配, 用匹配结果初始化PnP Solver.
         for (int i = 0; i < nKFs; i++)
         {
             KeyFrame *pKF = vpCandidateKFs[i];
@@ -1544,9 +1545,9 @@ namespace ORB_SLAM2
                 vbDiscarded[i] = true;
             else
             {
-                // hayden 当前帧和候选关键帧用BoW进行快速匹配, 匹配结果记录在vvpMapPointMatches
+                // NOTE 当前帧和候选关键帧用BoW进行快速匹配, 匹配结果记录在vvpMapPointMatches
                 int nmatches = matcher.SearchByBoW(pKF, mCurrentFrame, vvpMapPointMatches[i]);
-                // hayden 如果当前帧的匹配数小于15, 那么只能放弃这个关键帧.
+                // NOTE 如果当前帧的匹配数小于15, 那么只能放弃这个关键帧.
                 if (nmatches < 15)
                 {
                     vbDiscarded[i] = true;
@@ -1554,7 +1555,7 @@ namespace ORB_SLAM2
                 }
                 else
                 {
-                    // hayden 如果匹配数目够用, 用匹配结果初始化EPnPsolver
+                    // NOTE 如果匹配数目够用, 用匹配结果初始化EPnPsolver
                     PnPsolver *pSolver = new PnPsolver(mCurrentFrame, vvpMapPointMatches[i]);
                     pSolver->SetRansacParameters(0.99,   // 用于计算RANSAC迭代次数理论值的概率
                                                  10,     // 最小内点数, 但是要注意在程序中实际上是min(给定最小内点数,最小集,内点数理论值),不一定使用这个
@@ -1571,11 +1572,11 @@ namespace ORB_SLAM2
 
         // Alternatively perform some iterations of P4P RANSAC
         // Until we found a camera pose supported by enough inliers
-        // hayden 定义 bMatch: 标记是否已经找到相匹配的关键帧
+        // NOTE 定义 bMatch: 标记是否已经找到相匹配的关键帧
         bool bMatch = false;
-        // hayden 定义 matcher2 最小距离 < 0.9次小距离, 并检查旋转
+        // NOTE 定义 matcher2 最小距离 < 0.9次小距离, 并检查旋转
         ORBmatcher matcher2(0.9, true);
-        // hayden Tracking Step 4: 通过一系列操作, 直到找到能够匹配上的关键帧.
+        // NOTE Tracking Step 4: 通过一系列操作, 直到找到能够匹配上的关键帧.
         while (nCandidates > 0 && !bMatch)
         {
             // 遍历当前所有的候选关键帧

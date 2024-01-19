@@ -43,6 +43,7 @@ endif()
 
 # eigen
 find_package(Eigen3 REQUIRED)
+#find_package(Pangolin REQUIRED)
 
 find_package(catkin REQUIRED)
 catkin_package(
@@ -55,6 +56,7 @@ include_directories(
   ${EIGEN_INCLUDE_DIR}
   ${Pangolin_INCLUDE_DIRS}
 )
+
 MESSAGE(STATUS "OpenCV version and OpenCV_LIBS: " ${OpenCV_VERSION} ${OpenCV_LIBS})
 MESSAGE(STATUS "PROJECT_SOURCE_DIR" ${PROJECT_SOURCE_DIR})
 MESSAGE(STATUS "EIGEN_INCLUDE_DIR" ${EIGEN_INCLUDE_DIR})

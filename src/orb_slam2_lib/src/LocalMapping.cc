@@ -372,7 +372,7 @@ void LocalMapping::CreateNewMapPoints()
                 float v1 = fy1*y1*invz1+cy1;
                 float errX1 = u1 - kp1.pt.x;
                 float errY1 = v1 - kp1.pt.y;
-                //hayden: 5.991 is the chi-square distribution with 2 degrees of freedom and 95% confidence
+                //TODO: 5.991 is the chi-square distribution with 2 degrees of freedom and 95% confidence
                 if((errX1*errX1+errY1*errY1)>5.991*sigmaSquare1)
                     continue;
             }
@@ -384,7 +384,7 @@ void LocalMapping::CreateNewMapPoints()
                 float errX1 = u1 - kp1.pt.x;
                 float errY1 = v1 - kp1.pt.y;
                 float errX1_r = u1_r - kp1_ur;
-                //hayden 7.8 is the chi-square distribution with 3 degrees of freedom and 95% confidence
+                //TODO 7.8 is the chi-square distribution with 3 degrees of freedom and 95% confidence
                 if((errX1*errX1+errY1*errY1+errX1_r*errX1_r)>7.8*sigmaSquare1)
                     continue;
             }

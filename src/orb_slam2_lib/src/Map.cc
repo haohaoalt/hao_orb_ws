@@ -51,7 +51,7 @@ void Map::AddMapPoint(MapPoint *pMP)
     mspMapPoints.insert(pMP);
 }
 
-// hayden 向地图中插入ObjCenters
+// NOTE 向地图中插入ObjCenters
 // void Map::AddObjCenters(MapPoint *pMP)
 // {
 //     unique_lock<mutex> lock(mMutexMap);
@@ -173,7 +173,7 @@ void Map::clear()
     mvpKeyFrameOrigins.clear();
 }
 
-// hayden Map::serialize
+// NOTE Map::serialize
 template<class Archive>
 void Map::serialize(Archive &ar, const unsigned int version)
 {

@@ -118,7 +118,7 @@ void              System::GenericBuilder::ResetMap(Map *pMap) { mpMap.reset(pMap
 
 
 
-//Hayden 加载地图模式
+//NOTE 加载地图模式
 bool System::GenericBuilder::LoadMap(const string &filename)
 {
 
@@ -234,7 +234,7 @@ void System::Start()
     mbStarted = true;
 }
 
-// hayden 双目输入时的追踪器接口
+// NOTE 双目输入时的追踪器接口
 cv::Mat System::TrackStereo(const cv::Mat &imLeft,   // 左侧图像
                             const cv::Mat &imRight,  // 右侧图像
                             const double &timestamp) // 时间戳
@@ -259,6 +259,7 @@ cv::Mat System::TrackStereo(const cv::Mat &imLeft,   // 左侧图像
 
             // Wait until Local Mapping has effectively stopped
             // mtLocalMapping.join();
+            //NOTE: 不清楚应不应该进行注释 ex没note
             while (!mpLocalMapper->isStopped())
             {
                 std::this_thread::sleep_for(std::chrono::microseconds(1000));
@@ -309,7 +310,7 @@ cv::Mat System::TrackStereo(const cv::Mat &imLeft,   // 左侧图像
     return Tcw;
 }
 
-// // hayden YOLO双目输入时的追踪器接口
+// // NOTE YOLO双目输入时的追踪器接口
 // cv::Mat System::TrackStereo(const cv::Mat &imLeft,   // 左侧图像
 //                                 const cv::Mat &imRight,  // 右侧图像
 //                                 const double &timestamp, // 时间戳
@@ -400,6 +401,7 @@ cv::Mat System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const doub
             mpLocalMapper->RequestStop();
 
             // Wait until Local Mapping has effectively stopped
+	     //NOTE: 以下按照双目模式进行更改
             // mtLocalMapping.join();
             while (!mpLocalMapper->isStopped())
             {
@@ -456,7 +458,7 @@ cv::Mat System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const doub
 //             mpLocalMapper->RequestStop();
 
 //             // Wait until Local Mapping has effectively stopped
-//             //hayden unknown note
+//             //NOTE unknown note
 //             // while (!mpLocalMapper->isStopped())
 //             // {
 //             //     usleep(1000);
@@ -484,7 +486,7 @@ cv::Mat System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const doub
 //         }
 //     }
 
-//     // hayden  获得相机位姿的估计
+//     // NOTE  获得相机位姿的估计
 //     cv::Mat Tcw = mpTracker->GrabImageRGBD(im, depthmap, timestamp, detect_result);
 
 //     unique_lock<mutex> lock2(mMutexState);
@@ -591,7 +593,7 @@ void System::Shutdown()
     if (!bUseSavedMap && is_save_map)
         SaveMap(mapfile);
 }
-//hayden 保存轨迹SaveTrajectoryTUM
+//NOTE 保存轨迹SaveTrajectoryTUM
 void System::SaveTrajectoryTUM(const string &filename)
 {
     cout << endl << "Saving camera trajectory to " << filename << " ..." << endl;
@@ -615,7 +617,7 @@ void System::SaveTrajectoryTUM(const string &filename)
 
     // 文件写入的准备工作
     ofstream f;
-    // hayden 可以理解为，在输出浮点数的时候使用0.3141592654这样的方式而不是使用科学计数法
+    // NOTE 可以理解为，在输出浮点数的时候使用0.3141592654这样的方式而不是使用科学计数法
     f.open(filename.c_str()); 
     f << fixed;
 

@@ -81,7 +81,6 @@ int main(int argc, char **argv)
             }
         }
     }
-    //hayden: init Stereo
     ros::init(argc, argv, "Stereo");
     if (ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug))
     {
@@ -97,10 +96,10 @@ int main(int argc, char **argv)
     ROS_INFO("==========================================");
     cout << "\033[32m" << "hello world " << "\033[0m" << endl;
     ros::start();
-    bool bFileName = (((argc - 4) % 2) == 1);
     if(argc <= 4)
     {
-        cerr << endl << "Usage: rosrun ORB_SLAM2 Stereo path_to_vocabulary path_to_settings do_rectify" << endl;
+        cerr << endl
+             << "Usage: rosrun ORB_SLAM2 Stereo path_to_vocabulary path_to_settings do_rectify sequence" << endl;
         ros::shutdown();
         return 1;
     }
@@ -186,9 +185,24 @@ int main(int argc, char **argv)
 
     // Save camera trajectory, you find those files in roborace_ws/devel_isolated/orb_slam2_ros/lib/orb_slam2_ros
     // visualize the trajectories with evo-traj package
-    SLAM.SaveKeyFrameTrajectoryTUM("KeyFrameTrajectory_TUM_Format.txt");
-    SLAM.SaveTrajectoryTUM("FrameTrajectory_TUM_Format.txt");
-    SLAM.SaveTrajectoryKITTI("FrameTrajectory_KITTI_Format.txt");
+    bool bFileName = (((argc - 3) % 2) == 1);
+
+    string file_name;
+    if (bFileName)
+    {
+        file_name = string(argv[argc - 1]);
+        cout << "file name: " << file_name << endl;
+        // Save camera trajectory
+        const string kf_file = "kf_" + string(argv[argc - 1]) + ".txt";
+        const string f_file = "f_" + string(argv[argc - 1]) + ".txt";
+        SLAM.SaveTrajectoryTUM(f_file);
+        SLAM.SaveKeyFrameTrajectoryTUM(kf_file);
+    }
+    else
+    {
+        SLAM.SaveKeyFrameTrajectoryTUM("KeyFrameTrajectory.txt");
+        SLAM.SaveTrajectoryTUM("FrameTrajectory_TUM_Format.txt");
+    }
 
     ros::shutdown();
 

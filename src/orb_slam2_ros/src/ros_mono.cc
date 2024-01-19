@@ -87,9 +87,9 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "Mono");
     ros::start();
 
-    if(argc != 3)
+    if(argc <= 3)
     {
-        cerr << endl << "Usage: rosrun ORB_SLAM2 Mono path_to_vocabulary path_to_settings" << endl;
+        cerr << endl << "Usage: rosrun ORB_SLAM2 Mono path_to_vocabulary path_to_settings sequence" << endl;
         ros::shutdown();
         return 1;
     }
@@ -104,6 +104,7 @@ int main(int argc, char **argv)
 
     ImageGrabber igb {&SLAM};
     ros::NodeHandle nodeHandler;
+    //NOTE: MONO topic is /camera/image_raw
     ros::Subscriber sub = nodeHandler.subscribe("/camera/image_raw", 1, &ImageGrabber::GrabImage, &igb);
 
     SLAM.Start();
@@ -113,7 +114,21 @@ int main(int argc, char **argv)
     SLAM.Shutdown();
 
     // Save camera trajectory
-    SLAM.SaveKeyFrameTrajectoryTUM("KeyFrameTrajectory.txt");
+    bool bFileName = (((argc - 3) % 2) == 1);
+
+    string file_name;
+    if (bFileName)
+    {
+        file_name = string(argv[argc - 1]);
+        cout << "file name: " << file_name << endl;
+        // Save camera trajectory
+        const string kf_file = "kf_" + string(argv[argc - 1]) + ".txt";
+        SLAM.SaveKeyFrameTrajectoryTUM(kf_file);
+    }
+    else
+    {
+        SLAM.SaveKeyFrameTrajectoryTUM("KeyFrameTrajectory.txt");
+    }
 
     ros::shutdown();
 
