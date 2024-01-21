@@ -61,6 +61,8 @@ System::GenericBuilder::GenericBuilder(const std::string &strVocFile,
 
     //Load ORB Vocabulary, based on file extension
     bool bVocLoad = false;
+
+    // 获取字典加载状态
     if (has_suffix(strVocFile, ".txt"))
         bVocLoad = mVocabulary.loadFromTextFile(strVocFile);
     else if(has_suffix(strVocFile, ".bin"))
@@ -68,10 +70,12 @@ System::GenericBuilder::GenericBuilder(const std::string &strVocFile,
     else
         bVocLoad = false;
 
+    // 如果加载失败，就输出调试信息
     if(!bVocLoad)
         throw Failure(std::string("Failed to load vocabulary at: ") + strVocFile);
     else
-      cout << "Vocabulary loaded!" << endl << endl;
+        cout << "Vocabulary loaded!" << endl
+             << endl; // 否则则说明加载成功
 
     cv::FileNode mapfile_node = mSettings["Map.mapfile"];
     bReuseMap = false;
@@ -91,15 +95,27 @@ System::GenericBuilder::GenericBuilder(const std::string &strVocFile,
     }
     else
     {
+        // Create KeyFrame Database
         mpKeyFrameDatabase = make_unique<KeyFrameDatabase>(&mVocabulary);
+        // Create the Map
         mpMap = make_unique<Map>();
     }
 
-    mpTracker = make_unique<Tracking>(&mVocabulary, mpMap.get(), mpKeyFrameDatabase.get(), strSettingsFile, mSensor, bReuseMap);
-    mpLocalMapper = make_unique<LocalMapping>(mpMap.get(), mSensor == MONOCULAR);
-    mpLoopCloser = make_unique<LoopClosing>(mpMap.get(), mpKeyFrameDatabase.get(), &mVocabulary, mSensor != MONOCULAR);
-
-
+    // NOTE: 在本主进程中初始化追踪线程
+    mpTracker = make_unique<Tracking>(&mVocabulary,             // 字典
+                                      mpMap.get(),              // get mpMap
+                                      mpKeyFrameDatabase.get(), // get mpKeyFrameDatabase
+                                      strSettingsFile,          // 设置文件路径
+                                      mSensor,                  // 传感器类型iomanip
+                                      bReuseMap);
+    //NOTE: 初始化局部建图线程并运行
+    mpLocalMapper = make_unique<LocalMapping>(mpMap.get(),           // 指定使iomanip
+                                              mSensor == MONOCULAR); // TODO 为什么这个要设置成为MONOCULAR？？？
+    // NOTE: 初始化闭环检测线程并运行
+    mpLoopCloser = make_unique<LoopClosing>(mpMap.get(),              // 地图
+                                            mpKeyFrameDatabase.get(), // 关键帧数据库
+                                            &mVocabulary,             // ORB字典
+                                            mSensor != MONOCULAR);    // 当前的传感器是否是单目
 }
 
 System::GenericBuilder::~GenericBuilder() { }
@@ -164,11 +180,12 @@ or a ROSSystemBuilder (if we don't want Pangolin Viewer but ROS functionality)
 System::System(std::unique_ptr<IBuilder> builder)
 
     : mpBuilder(std::move(builder)),
-      mSensor(mpBuilder->GetSensorType()),
+      mSensor(mpBuilder->GetSensorType()), // 初始化传感器类型
       is_save_map(mpBuilder->GetMapSaveOption()),
-      mbStarted(false), mbReset(false),
-      mbActivateLocalizationMode(false),
-      mbDeactivateLocalizationMode(false)
+      mbStarted(false),
+      mbReset(false),                     // 无复位标志
+      mbActivateLocalizationMode(false),  // 没有这个模式转换标志
+      mbDeactivateLocalizationMode(false) // 没有这个模式转换标志
 {
     if (!mpBuilder)
     {
@@ -192,6 +209,11 @@ System::System(std::unique_ptr<IBuilder> builder)
 
     mapfile = mpBuilder->GetMapfileName();
     bUseSavedMap = mpBuilder->GetMapReuseOption();
+
+    // Load ORB Vocabulary
+    cout << endl
+         << "Loading ORB Vocabulary. This could take a while..." << endl;
+    // 建立一个新的ORB字典
     mpVocabulary = mpBuilder->GetVocabulary();
 
     mpKeyFrameDatabase = mpBuilder->GetKeyFrameDatabase();
@@ -207,7 +229,8 @@ System::System(std::unique_ptr<IBuilder> builder)
     mpTracker->SetPublisherThread(mpPublisher);
     mpPublisher->SetSystem(this);
 
-    //Set pointers between threads
+    // Set pointers between threads
+    // 设置进程间的指针
     mpTracker->SetLocalMapper(mpLocalMapper);
     mpTracker->SetLoopClosing(mpLoopCloser);
 
@@ -234,7 +257,7 @@ void System::Start()
     mbStarted = true;
 }
 
-// NOTE 双目输入时的追踪器接口
+// NOTE ORBSLAM2 双目输入时的追踪器接口
 cv::Mat System::TrackStereo(const cv::Mat &imLeft,   // 左侧图像
                             const cv::Mat &imRight,  // 右侧图像
                             const double &timestamp) // 时间戳
@@ -495,6 +518,15 @@ cv::Mat System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const doub
 //     mTrackedKeyPointsUn = mpTracker->mCurrentFrame.mvKeysUn;
 //     return Tcw;
 // }
+
+
+// 1、判断传感器的类型是否为单目模式，如果不是，则表示设置错误，函数直接返回
+// 2、上锁 模式锁(mMutexMode):
+// 	(1)如果目前需要激活定位模式，则请求停止局部建图，并且等待局部建图线程停止，设置为仅追踪模式。
+// 	(2)如果目前需要取消定位模式，则通知局部建图可以工作了，关闭仅追踪模式  
+// 3、上锁 复位锁(mMutexReset): 检查是否存在复位请求，如果有，则进行复位操作
+// 4、核心部分: 根据输入的图像获得相机位姿态（其中包含了特征提取匹配，地图初始化，关键帧查询等操作）
+// 5、进行数据更新，如追踪状态、当前帧的地图点、当前帧矫正之后的关键点等。
 cv::Mat System::TrackMonocular(const cv::Mat &im, const double &timestamp)
 {
     if(mSensor!=MONOCULAR)
@@ -505,16 +537,22 @@ cv::Mat System::TrackMonocular(const cv::Mat &im, const double &timestamp)
 
     // Check mode change
     {
+        // 独占锁，主要是为了mbActivateLocalizationMode和mbDeactivateLocalizationMode不会发生混乱
         unique_lock<mutex> lock(mMutexMode);
+        // mbActivateLocalizationMode为true会关闭局部地图线程
         if(mbActivateLocalizationMode)
         {
             mpLocalMapper->RequestStop();
             // Wait until Local Mapping has effectively stopped
             mtLocalMapping.join();
 
+            // 局部地图关闭以后，只进行追踪的线程，只计算相机的位姿，没有对局部地图进行更新
+            // 设置mbOnlyTracking为真
             mpTracker->InformOnlyTracking(true);
+            // 关闭线程可以使得别的线程得到更多的资源
             mbActivateLocalizationMode = false;
         }
+        // 如果mbDeactivateLocalizationMode是true，局部地图线程就被释放, 关键帧从局部地图中删除.
         if(mbDeactivateLocalizationMode)
         {
             mpTracker->InformOnlyTracking(false);
@@ -533,6 +571,7 @@ cv::Mat System::TrackMonocular(const cv::Mat &im, const double &timestamp)
     }
     }
 
+    // 获取相机位姿的估计结果
     cv::Mat Tcw = mpTracker->GrabImageMonocular(im,timestamp);
 
     unique_lock<mutex> lock2(mMutexState);

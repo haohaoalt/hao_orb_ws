@@ -23,6 +23,9 @@
 #include "KeyFrame.h"
 #include "Thirdparty/DBoW2/DBoW2/BowVector.h"
 
+
+#include "colorutils.h"
+
 #include<mutex>
 
 using namespace std;
@@ -198,7 +201,7 @@ vector<KeyFrame*> KeyFrameDatabase::DetectLoopCandidates(KeyFrame* pKF, float mi
 
 vector<KeyFrame*> KeyFrameDatabase::DetectRelocalizationCandidates(Frame *F)
 {
-    //cout << "================enter DetectRelocalizationCandidates" << endl;
+    cout << colouredString("KeyFrameDatabase::DetectRelocalizationCandidates", RED, BOLD) << "\n";
     list<KeyFrame *> lKFsSharingWords;
 
     // Search all keyframes that share a word with current frame

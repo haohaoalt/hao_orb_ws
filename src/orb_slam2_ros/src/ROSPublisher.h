@@ -37,9 +37,9 @@ class ROSPublisher :
     public ORB_SLAM2::IFrameSubscriber
 {
 public:
-    static constexpr const char *DEFAULT_MAP_FRAME = "odom2";
-    static constexpr const char *DEFAULT_MAP_FRAME_ADJUSTED = "odom2";
-    static constexpr const char *DEFAULT_CAMERA_FRAME = "orb_slam2/camera"; // this is the trajectory guess of the ORB-SLAM2, visualize it in RViz to see trajectory of camera
+    static constexpr const char *DEFAULT_MAP_FRAME = "map";
+    static constexpr const char *DEFAULT_MAP_FRAME_ADJUSTED = "map_adjusted";
+    static constexpr const char *DEFAULT_CAMERA_FRAME = "orb2_camera"; // this is the trajectory guess of the ORB-SLAM2, visualize it in RViz to see trajectory of camera
     static constexpr const char *DEFAULT_BASE_FRAME = "base_link";
     // static constexpr const char *DEFAULT_BASE_FRAME = "rear_axis_middle_ground";
     static constexpr const float DEFAULT_OCTOMAP_RESOLUTION = 0.02; // defines resolution of octomap

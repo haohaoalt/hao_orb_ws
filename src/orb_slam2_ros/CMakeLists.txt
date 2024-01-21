@@ -56,6 +56,7 @@ include_directories(
   ${roscpp_INCLUDE_DIRS}
   ${Pangolin_INCLUDE_DIRS}
   ${PROJECT_SOURCE_DIR}
+  ${PROJECT_SOURCE_DIR}/include
   ${PROJECT_SOURCE_DIR}/../orb_slam2_lib
   ${PROJECT_SOURCE_DIR}/../orb_slam2_lib/include
 
@@ -94,6 +95,7 @@ target_link_libraries(Stereo
 add_executable(RGBD
   src/ros_rgbd.cc
   src/ROSPublisher.cpp
+  src/colorutils.cpp
 )
 
 add_dependencies(Stereo ${${PROJECT_NAME}_EXPORTED_TARGETS})

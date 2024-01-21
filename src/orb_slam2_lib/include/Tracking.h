@@ -57,6 +57,7 @@ public:
     // Preprocess the input and call Track(). Extract features and performs stereo matching.
     cv::Mat GrabImageStereo(const cv::Mat &imRectLeft,const cv::Mat &imRectRight, const double &timestamp);
     cv::Mat GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const double &timestamp);
+    
     /**
      * @brief 处理RGBD输入的图像
      *
@@ -120,10 +121,10 @@ public:
 
     // Lists used to recover the full camera trajectory at the end of the execution.
     // Basically we store the reference keyframe for each frame and its relative transformation
-    list<cv::Mat> mlRelativeFramePoses;
-    list<KeyFrame*> mlpReferences;
+    list<cv::Mat> mlRelativeFramePoses; // mlFrameTimes ml开头的变量表示列表（list）型类成员变量
+    list<KeyFrame*> mlpReferences;     // mlp开头的变量表示列表（list）型类成员变量，并且它的元素类型是指针（pointer）
     list<double> mlFrameTimes;
-    list<bool> mlbLost;
+    list<bool> mlbLost; // mlb开头的变量表示列表（list）型类成员变量，并且它的元素类型是布尔型（bool）
 
     // True if local mapping is deactivated and we are performing only localization
     bool mbOnlyTracking;

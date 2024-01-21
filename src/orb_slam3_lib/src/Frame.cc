@@ -910,9 +910,13 @@ void Frame::AssignFeaturesToGrid()
 void Frame::ExtractORB(int flag, const cv::Mat &im, const int x0, const int x1)
 {
     vector<int> vLapping = {x0,x1};
+    // 判断是左图还是右图
     if(flag==0)
+        // 左图的话就套使用左图指定的特征点提取器，并将提取结果保存到对应的变量中
+        // 这里使用了仿函数来完成，重载了括号运算符 ORBextractor::operator()
         monoLeft = (*mpORBextractorLeft)(im,cv::Mat(),mvKeys,mDescriptors,vLapping);
     else
+        // 右图的话就需要使用右图指定的特征点提取器，并将提取结果保存到对应的变量中
         monoRight = (*mpORBextractorRight)(im,cv::Mat(),mvKeysRight,mDescriptorsRight,vLapping);
 }
 

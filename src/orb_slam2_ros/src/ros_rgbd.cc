@@ -34,7 +34,7 @@
 #include "System.h"
 #include "ROSPublisher.h"
 #include "utils.h"
-
+#include <colorutils.h>
 // for increasing stack size
 // in order to handle large maps
 #include <sys/resource.h>
@@ -52,6 +52,33 @@ public:
 
     ORB_SLAM2::System *mpSLAM;
 };
+
+void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr &msgRGB, const sensor_msgs::ImageConstPtr &msgD)
+{
+    // Copy the ros image message to cv::Mat.
+    cv_bridge::CvImageConstPtr cv_ptrRGB;
+    try
+    {
+        cv_ptrRGB = cv_bridge::toCvShare(msgRGB);
+    }
+    catch (cv_bridge::Exception &e)
+    {
+        ROS_ERROR("cv_bridge exception: %s", e.what());
+        return;
+    }
+
+    cv_bridge::CvImageConstPtr cv_ptrD;
+    try
+    {
+        cv_ptrD = cv_bridge::toCvShare(msgD);
+    }
+    catch (cv_bridge::Exception &e)
+    {
+        ROS_ERROR("cv_bridge exception: %s", e.what());
+        return;
+    }
+    mpSLAM->TrackRGBD(cv_ptrRGB->image, cv_ptrD->image, cv_ptrRGB->header.stamp.toSec());
+}
 
 int main(int argc, char **argv)
 {
@@ -91,12 +118,13 @@ int main(int argc, char **argv)
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
     const double freq = 100.0;
     // Set up a namespace for topics
-    ros::NodeHandle nh("/orb_slam2");
+    ros::NodeHandle nh("/orb");
+
     ORB_SLAM2::System SLAM(make_unique<ROSSystemBuilder>(argv[1], argv[2], ORB_SLAM2::System::RGBD, freq, nh));
+    
     ImageGrabber igb(&SLAM);
-    ros::NodeHandle nodeHandler;
-    message_filters::Subscriber<sensor_msgs::Image> rgb_sub(nodeHandler, "/camera/rgb/image_color", 1);
-    message_filters::Subscriber<sensor_msgs::Image> depth_sub(nodeHandler, "/camera/depth/image", 1);
+    message_filters::Subscriber<sensor_msgs::Image> rgb_sub(nh, "/camera/rgb/image_color", 1);
+    message_filters::Subscriber<sensor_msgs::Image> depth_sub(nh, "/camera/depth/image", 1);
     typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> sync_pol;
     message_filters::Synchronizer<sync_pol> sync(sync_pol(10), rgb_sub, depth_sub);
 
@@ -130,35 +158,8 @@ int main(int argc, char **argv)
         SLAM.SaveKeyFrameTrajectoryTUM("KeyFrameTrajectory.txt");
         SLAM.SaveTrajectoryTUM("FrameTrajectory_TUM_Format.txt");
     }
-
+    std::cout << colouredString("DONE!", GREEN, REGULAR) << std::endl;
     ros::shutdown();
 
     return 0;
-}
-
-void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr &msgRGB, const sensor_msgs::ImageConstPtr &msgD)
-{
-    // Copy the ros image message to cv::Mat.
-    cv_bridge::CvImageConstPtr cv_ptrRGB;
-    try
-    {
-        cv_ptrRGB = cv_bridge::toCvShare(msgRGB);
-    }
-    catch (cv_bridge::Exception &e)
-    {
-        ROS_ERROR("cv_bridge exception: %s", e.what());
-        return;
-    }
-
-    cv_bridge::CvImageConstPtr cv_ptrD;
-    try
-    {
-        cv_ptrD = cv_bridge::toCvShare(msgD);
-    }
-    catch (cv_bridge::Exception &e)
-    {
-        ROS_ERROR("cv_bridge exception: %s", e.what());
-        return;
-    }
-    mpSLAM->TrackRGBD(cv_ptrRGB->image, cv_ptrD->image, cv_ptrRGB->header.stamp.toSec());
 }

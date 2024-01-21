@@ -84,6 +84,9 @@ Frame::Frame(const Frame &frame)
         if (mvKeys.empty())
             return;
 
+        /**
+         * @brief 用内参对特征点去畸变，结果报存在mvKeysUn中
+         */
         UndistortKeyPoints();
 
         ComputeStereoMatches();
@@ -186,54 +189,78 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extra
      mTimeStamp(timeStamp), mK(K.clone()),mDistCoef(distCoef.clone()), mbf(bf), mThDepth(thDepth)
 {
     // Frame ID
+    // Step 1 帧的ID 自增
     mnId=nNextId++;
 
-        // Scale Level Info
-        mnScaleLevels = mpORBextractorLeft->GetLevels();
-        mfScaleFactor = mpORBextractorLeft->GetScaleFactor();
-        mfLogScaleFactor = log(mfScaleFactor);
-        mvScaleFactors = mpORBextractorLeft->GetScaleFactors();
-        mvInvScaleFactors = mpORBextractorLeft->GetInverseScaleFactors();
-        mvLevelSigma2 = mpORBextractorLeft->GetScaleSigmaSquares();
-        mvInvLevelSigma2 = mpORBextractorLeft->GetInverseScaleSigmaSquares();
+    // Scale Level Info
+    // Step 2 计算图像金字塔的参数
+    // Scale Level Info
+    // 获取图像金字塔的层数
+    mnScaleLevels = mpORBextractorLeft->GetLevels();
+    // 获取每层的缩放因子
+    mfScaleFactor = mpORBextractorLeft->GetScaleFactor();
+    // 获取缩放因子的对数
+    mfLogScaleFactor = log(mfScaleFactor);
+    // 获取每层的缩放因子
+    mvScaleFactors = mpORBextractorLeft->GetScaleFactors();
+    // 获取每层的缩放因子的倒数
+    mvInvScaleFactors = mpORBextractorLeft->GetInverseScaleFactors();
+    // 获取每层的缩放因子的平方
+    mvLevelSigma2 = mpORBextractorLeft->GetScaleSigmaSquares();
+    // 获取每层的缩放因子的平方的倒数
+    mvInvLevelSigma2 = mpORBextractorLeft->GetInverseScaleSigmaSquares();
 
-        // ORB extraction
-        ExtractORB(0, imGray);
+    // ORB extraction
+    //对这个单目图像进行提取特征点, 第一个参数0-左图， 1-右图
+    ExtractORB(0, imGray);
 
-        N = mvKeys.size();
+    // 求出特征点的个数
+    N = mvKeys.size();
 
-        if (mvKeys.empty())
-            return;
+    // 如果没有能够成功提取出特征点，那么就直接返回了
+    if (mvKeys.empty())
+        return;
 
-        UndistortKeyPoints();
+    //用OpenCV的矫正函数、内参对提取到的特征点进行矫正
+    UndistortKeyPoints();
 
-        // Set no stereo information
-        mvuRight = vector<float>(N, -1);
-        mvDepth = vector<float>(N, -1);
+    // Set no stereo information
+    // 由于单目相机无法直接获得立体信息，所以这里要给右图像对应点和深度赋值-1表示没有相关信息
+    mvuRight = vector<float>(N, -1);
+    mvDepth = vector<float>(N, -1);
 
-        mvpMapPoints = vector<MapPoint *>(N, static_cast<MapPoint *>(NULL));
-        mvbOutlier = vector<bool>(N, false);
+    // 初始化本帧的地图点
+    mvpMapPoints = vector<MapPoint *>(N, static_cast<MapPoint *>(NULL));
+    // 记录地图点是否为外点，初始化均为外点false
+    mvbOutlier = vector<bool>(N, false);
 
-        // This is done only for the first Frame (or after a change in the calibration)
-        if (mbInitialComputations)
-        {
-            ComputeImageBounds(imGray);
+    // This is done only for the first Frame (or after a change in the calibration)
+    // 计算去畸变后图像边界，将特征点分配到网格中。这个过程一般是在第一帧或者是相机标定参数发生变化之后进行
+    if (mbInitialComputations)
+    {
+        // 计算去畸变后图像的边界
+        ComputeImageBounds(imGray);
 
-            mfGridElementWidthInv = static_cast<float>(FRAME_GRID_COLS) / static_cast<float>(mnMaxX - mnMinX);
-            mfGridElementHeightInv = static_cast<float>(FRAME_GRID_ROWS) / static_cast<float>(mnMaxY - mnMinY);
+        // 表示一个图像像素相当于多少个图像网格列（宽）
+        mfGridElementWidthInv = static_cast<float>(FRAME_GRID_COLS) / static_cast<float>(mnMaxX - mnMinX);
+        // 表示一个图像像素相当于多少个图像网格行（高）S
+        mfGridElementHeightInv = static_cast<float>(FRAME_GRID_ROWS) / static_cast<float>(mnMaxY - mnMinY);
 
-            fx = K.at<float>(0, 0);
-            fy = K.at<float>(1, 1);
-            cx = K.at<float>(0, 2);
-            cy = K.at<float>(1, 2);
-            invfx = 1.0f / fx;
-            invfy = 1.0f / fy;
-
-            mbInitialComputations = false;
+        // 给类的静态成员变量复制
+        fx = K.at<float>(0, 0);
+        fy = K.at<float>(1, 1);
+        cx = K.at<float>(0, 2);
+        cy = K.at<float>(1, 2);
+        // 猜测是因为这种除法计算需要的时间略长，所以这里直接存储了这个中间计算结果
+        invfx = 1.0f / fx;
+        invfy = 1.0f / fy;
+        // 特殊的初始化过程完成，标志复位
+        mbInitialComputations = false;
         }
 
+        // 计算 basline
         mb = mbf / fx;
-
+        // 将特征点分配到图像网格中
         AssignFeaturesToGrid();
     }
 
@@ -256,9 +283,16 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extra
 
     void Frame::ExtractORB(int flag, const cv::Mat &im)
     {
+        // 判断是左图还是右图
         if (flag == 0)
-            (*mpORBextractorLeft)(im, cv::Mat(), mvKeys, mDescriptors);
+            // 左图的话就套使用左图指定的特征点提取器，并将提取结果保存到对应的变量中
+            // 这里使用了仿函数来完成，重载了括号运算符 ORBextractor::operator()
+            (*mpORBextractorLeft)(im,            // 待提取特征点的图像
+                                  cv::Mat(),     // 掩摸图像, 实际没有用到
+                                  mvKeys,        // 输出变量，用于保存提取后的特征点
+                                  mDescriptors); // 输出变量，用于保存特征点的描述子
         else
+            // 右图的话就需要使用右图指定的特征点提取器，并将提取结果保存到对应的变量中
             (*mpORBextractorRight)(im, cv::Mat(), mvKeysRight, mDescriptorsRight);
     }
 
@@ -412,30 +446,46 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extra
 
     void Frame::UndistortKeyPoints()
     {
+        // Step 1 如果第一个畸变参数为0，不需要矫正。第一个畸变参数k1是最重要的，一般不为0，为0的话，说明畸变参数都是0
+        // 变量mDistCoef中存储了opencv指定格式的去畸变参数，格式为：(k1,k2,p1,p2,k3)
         if (mDistCoef.at<float>(0) == 0.0)
         {
             mvKeysUn = mvKeys;
             return;
         }
 
+        // Step 2 如果畸变参数不为0，用OpenCV函数进行畸变矫正
         // Fill matrix with points
+        // N为提取的特征点数量，为满足OpenCV函数输入要求，将N个特征点保存在N*2的矩阵中
         cv::Mat mat(N, 2, CV_32F);
+        // 遍历每个特征点，并将它们的坐标保存到矩阵中
         for (int i = 0; i < N; i++)
         {
+            // 然后将这个特征点的横纵坐标分别保存
             mat.at<float>(i, 0) = mvKeys[i].pt.x;
             mat.at<float>(i, 1) = mvKeys[i].pt.y;
         }
 
         // Undistort points
+        // 函数reshape(int cn,int rows=0) 其中cn为更改后的通道数，rows=0表示这个行将保持原来的参数不变
+        // 为了能够直接调用opencv的函数来去畸变，需要先将矩阵调整为2通道（对应坐标x,y）
         mat = mat.reshape(2);
-        cv::undistortPoints(mat, mat, mK, mDistCoef, cv::Mat(), mK);
+        cv::undistortPoints(mat,       // 输入的特征点坐标
+                            mat,       // 输出的校正后的特征点坐标覆盖原矩阵
+                            mK,        // 相机的内参数矩阵
+                            mDistCoef, // 相机畸变参数矩阵
+                            cv::Mat(), // 一个空矩阵，对应为函数原型中的R
+                            mK);       // 新内参数矩阵，对应为函数原型中的P
         mat = mat.reshape(1);
 
         // Fill undistorted keypoint vector
         mvKeysUn.resize(N);
         for (int i = 0; i < N; i++)
         {
+            // 根据索引获取这个特征点
+            // 注意之所以这样做而不是直接重新声明一个特征点对象的目的是，能够得到源特征点对象的其他属性
             cv::KeyPoint kp = mvKeys[i];
+            // 读取校正后的坐标并覆盖老坐标
             kp.pt.x = mat.at<float>(i, 0);
             kp.pt.y = mat.at<float>(i, 1);
             mvKeysUn[i] = kp;

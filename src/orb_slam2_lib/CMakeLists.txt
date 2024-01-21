@@ -45,12 +45,13 @@ endif()
 find_package(Eigen3 REQUIRED)
 #find_package(Pangolin REQUIRED)
 
-find_package(catkin REQUIRED)
+find_package(catkin REQUIRED  COMPONENTS roscpp std_msgs)
 catkin_package(
   LIBRARIES orb_slam2_lib
-  )
+)
 
 include_directories(
+  ${roscpp_INCLUDE_DIRS}
   ${PROJECT_SOURCE_DIR}
   ${PROJECT_SOURCE_DIR}/include
   ${EIGEN_INCLUDE_DIR}
@@ -84,6 +85,7 @@ set(SRCS
   src/Sim3Solver.cc
   src/Initializer.cc
   src/Object.cpp
+  src/colorutils.cpp
 )
 
 set(LIBS

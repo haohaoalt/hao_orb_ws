@@ -19,18 +19,18 @@
 */
 
 
-#include<iostream>
-#include<algorithm>
-#include<fstream>
-#include<chrono>
+#include <iostream>
+#include <algorithm>
+#include <fstream>
+#include <chrono>
 
-#include<ros/ros.h>
+#include <ros/ros.h>
 #include <cv_bridge/cv_bridge.h>
 #include <message_filters/subscriber.h>
 #include <message_filters/time_synchronizer.h>
 #include <message_filters/sync_policies/approximate_time.h>
 
-#include<opencv2/core/core.hpp>
+#include <opencv2/core/core.hpp>
 
 #include "System.h"
 #include "ROSPublisher.h"
@@ -58,6 +58,46 @@ public:
     cv::Mat M1l,M2l,M1r,M2r;
 };
 
+void ImageGrabber::GrabStereo(const sensor_msgs::ImageConstPtr &msgLeft, const sensor_msgs::ImageConstPtr &msgRight)
+{
+    // Copy the ros image message to cv::Mat. - CVBridge provides the required interface between ROS and OpenCV
+    // Const pointers to avoid modifying the original data -> toCvShare()
+    cv_bridge::CvImageConstPtr cv_ptrLeft;
+    try
+    {
+        cv_ptrLeft = cv_bridge::toCvShare(msgLeft);
+    }
+    catch (cv_bridge::Exception &e)
+    {
+        ROS_ERROR("cv_bridge exception: %s", e.what());
+        return;
+    }
+
+    cv_bridge::CvImageConstPtr cv_ptrRight;
+    try
+    {
+        cv_ptrRight = cv_bridge::toCvShare(msgRight);
+    }
+    catch (cv_bridge::Exception &e)
+    {
+        ROS_ERROR("cv_bridge exception: %s", e.what());
+        return;
+    }
+
+    // rectify images, not needed with images from zed
+    if (do_rectify)
+    {
+        cv::Mat imLeft, imRight;
+        cv::remap(cv_ptrLeft->image, imLeft, M1l, M2l, cv::INTER_LINEAR);
+        cv::remap(cv_ptrRight->image, imRight, M1r, M2r, cv::INTER_LINEAR);
+        // starts the tracking thread
+        mpSLAM->TrackStereo(imLeft, imRight, cv_ptrLeft->header.stamp.toSec());
+    }
+    else
+    {
+        mpSLAM->TrackStereo(cv_ptrLeft->image, cv_ptrRight->image, cv_ptrLeft->header.stamp.toSec());
+    }
+}
 int main(int argc, char **argv)
 {
 
@@ -209,44 +249,4 @@ int main(int argc, char **argv)
     return 0;
 }
 
-void ImageGrabber::GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft,const sensor_msgs::ImageConstPtr& msgRight)
-{
-    // Copy the ros image message to cv::Mat. - CVBridge provides the required interface between ROS and OpenCV
-    //Const pointers to avoid modifying the original data -> toCvShare()
-    cv_bridge::CvImageConstPtr cv_ptrLeft;
-    try
-    {
-        cv_ptrLeft = cv_bridge::toCvShare(msgLeft);
-    }
-    catch (cv_bridge::Exception& e)
-    {
-        ROS_ERROR("cv_bridge exception: %s", e.what());
-        return;
-    }
 
-    cv_bridge::CvImageConstPtr cv_ptrRight;
-    try
-    {
-        cv_ptrRight = cv_bridge::toCvShare(msgRight);
-    }
-    catch (cv_bridge::Exception& e)
-    {
-        ROS_ERROR("cv_bridge exception: %s", e.what());
-        return;
-    }
-
-    // rectify images, not needed with images from zed
-    if(do_rectify)
-    {
-        cv::Mat imLeft, imRight;
-        cv::remap(cv_ptrLeft->image,imLeft,M1l,M2l,cv::INTER_LINEAR);
-        cv::remap(cv_ptrRight->image,imRight,M1r,M2r,cv::INTER_LINEAR);
-        // starts the tracking thread
-        mpSLAM->TrackStereo(imLeft,imRight,cv_ptrLeft->header.stamp.toSec());
-    }
-    else
-    {
-        mpSLAM->TrackStereo(cv_ptrLeft->image, cv_ptrRight->image, cv_ptrLeft->header.stamp.toSec());
-    }
-
-}

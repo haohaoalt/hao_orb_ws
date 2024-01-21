@@ -2,11 +2,9 @@
 #include "FrameDrawer.h"
 #include "Tracking.h"
 #include "utils.h"
-
 #include <thread>
 #include <sstream>
 #include <cassert>
-
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/Image.h>
@@ -14,20 +12,19 @@
 #include <std_msgs/String.h>
 #include <orb_slam2_ros/ORBState.h>
 #include <cv_bridge/cv_bridge.h>
-
 #include <octomap/Pointcloud.h>
 #include <octomap/octomap.h>
 #include <octomap_msgs/conversions.h>
 #include <octomap_ros/conversions.h>
-
 #include <chrono>
-
 #include <iostream>
 #include <fstream>
 #include <nav_msgs/Odometry.h>
+#include "colorutils.h"
 
 using namespace ORB_SLAM2;
 
+// 通过检查存储整数1的内存的第一个字节来判断系统的字节序是否为大端序。如果第一个字节是1，那么系统是大端序
 static bool isBigEndian()
 {
     volatile int num = 1;
@@ -35,7 +32,7 @@ static bool isBigEndian()
 }
 
 static const bool IS_BIG_ENDIAN = isBigEndian();
-
+// 将 OpenCV 中的 cv::Mat 对象转换为字符串的函数
 namespace std
 {
     std::string to_string(const cv::Mat &mat)
@@ -45,7 +42,8 @@ namespace std
         return ss.str();
     }
 }
-// Konvertiert Rot. Matrix (SO) zu Quaternion
+
+// Konvertiert Rot. Matrix (SO) zu Quaternion 用于将旋转矩阵（Rotation Matrix）转换为四元数（Quaternion）
 template <typename Q>
 Q convertToQuaternion(const cv::Mat &rot)
 {
@@ -82,6 +80,7 @@ Q convertToQuaternion(const cv::Mat &rot)
     return {tmp[0], tmp[1], tmp[2], tmp[3]};
 }
 
+// 定义了一个函数 computeCameraTransform，该函数接受一个 cv::Mat 类型的参数 Twc（表示相机到世界坐标系的变换），然后计算并返回相机的变换矩阵
 cv::Mat computeCameraTransform(const cv::Mat &Twc)
 {
     cv::Mat ret = cv::Mat::eye(4, 4, CV_32F);
@@ -97,6 +96,7 @@ cv::Mat computeCameraTransform(const cv::Mat &Twc)
     return ret;
 }
 
+// 该函数接受一个包含指向地图点（MapPoint）的指针的向量 map_points，然后将这些地图点转换为ROS的PointCloud2消息格式。
 sensor_msgs::PointCloud2 convertToPCL2(const std::vector<MapPoint *> &map_points)
 {
     const std::size_t n_map_points = map_points.size();
@@ -161,18 +161,17 @@ T getROSParam(ros::NodeHandle nh, std::string param_name, T default_value)
 }
 
 // Aufruf Constructor
+// ROS 发布者类 ROSPublisher 的构造函数实现
 ROSPublisher::ROSPublisher(Map *map, double frequency, bool bReuseMap_, ros::NodeHandle nh) :
-
-                                                                                              // Aufruf Constructor der Basisklassen
-                                                                                              IMapPublisher(map),
-                                                                                              drawer_(GetMap(), bReuseMap_),
-                                                                                              nh_(std::move(nh)),
-                                                                                              pub_rate_(frequency),
-                                                                                              lastBigMapChange_(-1),
-                                                                                              octomap_tf_based_(false),
-                                                                                              octomap_(getROSParam<float>(nh, "octomap_resolution", ROSPublisher::DEFAULT_OCTOMAP_RESOLUTION)),
-                                                                                              pointcloud_chunks_stashed_(0),
-                                                                                              clear_octomap_(false)
+IMapPublisher(map),
+drawer_(GetMap(), bReuseMap_),
+nh_(std::move(nh)),
+pub_rate_(frequency),
+lastBigMapChange_(-1),
+octomap_tf_based_(false),
+octomap_(getROSParam<float>(nh, "octomap_resolution", ROSPublisher::DEFAULT_OCTOMAP_RESOLUTION)),
+pointcloud_chunks_stashed_(0),
+clear_octomap_(false)
 {
     // Odys: As in Viewer and Tracking, if a map is loaded we start with state as LOST
     if (bReuseMap_)
@@ -181,6 +180,7 @@ ROSPublisher::ROSPublisher(Map *map, double frequency, bool bReuseMap_, ros::Nod
         orb_state_.state = orb_slam2_ros::ORBState::UNKNOWN;
 
     // initialize parameters
+    // 从ROS参数服务器中获取一些参数值，包括 OctoMap 是否启用、投影最小高度、梯度图的一些参数等
     nh.param<bool>("octomap_enabled", octomap_enabled_, true);
     nh.param<double>("occupancy_projection_min_height", projection_min_height_, ROSPublisher::PROJECTION_MIN_HEIGHT);
     nh.param<float>("occupancy_gradient_max_height", gradient_max_height_, ROSPublisher::GRADIENT_MAX_HEIGHT);
@@ -188,6 +188,7 @@ ROSPublisher::ROSPublisher(Map *map, double frequency, bool bReuseMap_, ros::Nod
     nh.param<float>("occupancy_gradient_low_slope", gradient_low_slope_, ROSPublisher::GRADIENT_LOW_SLOPE);
     nh.param<float>("occupancy_gradient_high_slope", gradient_high_slope_, ROSPublisher::GRADIENT_HIGH_SLOPE);
 
+    // 初始化相机位置
     camera_position_old = {0.0, 0.0, 0.0};
 
     // initialize publishers
@@ -203,8 +204,10 @@ ROSPublisher::ROSPublisher(Map *map, double frequency, bool bReuseMap_, ros::Nod
     state_pub_ = nh_.advertise<orb_slam2_ros::ORBState>("state", 10);
     state_desc_pub_ = nh_.advertise<std_msgs::String>("state_description", 10);
 
+    // 初始化 OctoMap 相关的发布者和开启 OctoMap 工作线程
     if (octomap_enabled_)
     {
+        cout << "Octomap enabled" << endl;
         octomap_pub_ = nh_.advertise<octomap_msgs::Octomap>("octomap", 3);
         projected_map_pub_ = nh.advertise<nav_msgs::OccupancyGrid>("projected_map", 5, 10);
         gradient_map_pub_ = nh.advertise<nav_msgs::OccupancyGrid>("gradient_map", 5, 10);
@@ -255,22 +258,24 @@ void ROSPublisher::stashMapPoints(bool all_map_points)
  */
 void ROSPublisher::octomapWorker()
 {
-
+    cout << colouredString("octomapWorker thread: started", GREEN, BOLD) << endl;
+    // 记录当前线程循环时间的时间点
     static std::chrono::system_clock::time_point this_cycle_time;
-
+    // 表示相机位姿的 frame
     octomap::pose6d frame;
+    // 指示是否成功获取 TF 变换
     bool got_tf;
+    // 表示相机坐标系原点
     octomap::point3d origin;
-
-    // wait until ORB_SLAM 2 is up and running
+    // wait until ORB_SLAM2 is up and running
     ROS_INFO("octomapWorker thread: waiting for ORBState OK");
     while (orb_state_.state != orb_slam2_ros::ORBState::OK)
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(250));
     }
-
     ROS_INFO("octomapWorker thread: starting to work (ORBState is OK)");
     // main thread loop
+    // 进入主循环，该循环在线程未停止的情况下一直执行
     while (!isStopped())
     {
         this_cycle_time = std::chrono::system_clock::now();
@@ -293,6 +298,7 @@ void ROSPublisher::octomapWorker()
             got_tf = false;
         }
 
+        cout << colouredString("octomapWorker thread: got TF: ", GREEN, BOLD) << got_tf << "|| "<< "\n";
         if (got_tf || ROSPublisher::OCTOMAP_REBUILD)
         {
             clear_octomap_ |= (got_tf != octomap_tf_based_); // clear whenever TF mode changes
@@ -324,7 +330,7 @@ void ROSPublisher::octomapWorker()
         }
         else
         {
-            ROS_INFO("octomapWorker thread: missing camera TF, losing %i pointcloud chunks.", pointcloud_chunks_stashed_);
+            // ROS_INFO("octomapWorker thread: missing camera TF, losing %i pointcloud chunks.", pointcloud_chunks_stashed_);
             pointcloud_map_points_mutex_.lock();
             pointcloud_map_points_.clear();
             pointcloud_chunks_stashed_ = 0;
@@ -549,7 +555,7 @@ void ROSPublisher::octomapGradientToOccupancyGrid(const octomap::OcTree &octree,
     cv::Scharr(height_map, gradient_x, CV_32F, 1, 0, 1. / 16.);
     cv::Scharr(height_map, gradient_y, CV_32F, 0, 1, 1. / 16.);
     // TODO 0.5 rly?
-    cv::addWeighted(cv::abs(gradient_x), 0.5, cv::abs(gradient_y), 0.5, 0, gradient_map); 
+    cv::addWeighted(cv::abs(gradient_x), 0.5, cv::abs(gradient_y), 0.5, 0, gradient_map);
 
     // height slope thresholds:
     // values < lower are considered free space
@@ -726,7 +732,7 @@ void ROSPublisher::publishOctomap()
         msgOctomap.header.frame_id = octomap_tf_based_ ? ROSPublisher::DEFAULT_MAP_FRAME_ADJUSTED : ROSPublisher::DEFAULT_MAP_FRAME;
         msgOctomap.header.stamp = ros::Time::now();
         // TODO: full/binary...?
-        if (octomap_msgs::binaryMapToMsg(octomap_, msgOctomap)) 
+        if (octomap_msgs::binaryMapToMsg(octomap_, msgOctomap))
         {
             auto tn = std::chrono::system_clock::now();
             auto dt = std::chrono::duration_cast<std::chrono::milliseconds>(tn - t0);

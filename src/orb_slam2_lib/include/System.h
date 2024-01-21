@@ -117,9 +117,9 @@ public:
         virtual bool LoadMap(const string &filename) override;
 
     protected:
-        eSensor mSensor;
-        cv::FileStorage mSettings;
-        ORBVocabulary mVocabulary;
+        eSensor mSensor; // 以小写字母m（member的首字母）开头的变量表示类的成员变量
+        cv::FileStorage mSettings; // 以小写字母m（member的首字母）开头的变量表示类的成员变量
+        ORBVocabulary mVocabulary; // 以小写字母m（member的首字母）开头的变量表示类的成员变量
 
         string mapfile;
         int save_map;
@@ -136,7 +136,7 @@ public:
 
         std::unique_ptr<KeyFrameDatabase> mpKeyFrameDatabase;
         std::unique_ptr<Map> mpMap;
-        std::unique_ptr<Tracking> mpTracker;
+        std::unique_ptr<Tracking> mpTracker; // mp开头的变量表示指针（pointer）型类成员变量
         std::unique_ptr<LocalMapping> mpLocalMapper;
         std::unique_ptr<LoopClosing> mpLoopCloser;
 
@@ -151,20 +151,24 @@ public:
     // Input images: RGB (CV_8UC3) or grayscale (CV_8U). RGB is converted to grayscale.
     // Returns the camera pose (empty if tracking fails).
     cv::Mat TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timestamp);
-    cv::Mat TrackStereo(const cv::Mat &imLeft,   // 左侧图像
-                                    const cv::Mat &imRight,  // 右侧图像
-                                    const double &timestamp, // 时间戳
-                                    const vector<std::pair<vector<double>, int>> &detect_result);
-        // Process the given rgbd frame. Depthmap must be registered to the RGB frame.
-        // Input image: RGB (CV_8UC3) or grayscale (CV_8U). RGB is converted to grayscale.
-        // Input depthmap: Float (CV_32F).
-        // Returns the camera pose (empty if tracking fails).
+
+    // cv::Mat TrackStereo(const cv::Mat &imLeft,   // 左侧图像
+    //                                 const cv::Mat &imRight,  // 右侧图像
+    //                                 const double &timestamp, // 时间戳
+    //                                 const vector<std::pair<vector<double>, int>> &detect_result);
+
+    // Process the given rgbd frame. Depthmap must be registered to the RGB frame.
+    // Input image: RGB (CV_8UC3) or grayscale (CV_8U). RGB is converted to grayscale.
+    // Input depthmap: Float (CV_32F).
+    // Returns the camera pose (empty if tracking fails).
     cv::Mat TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const double &timestamp);
+    
     // NOTE 而在这里对RGBD图像的说法则是“配准”
-    cv::Mat TrackRGBD(const cv::Mat &im,       // 彩色图像
-                      const cv::Mat &depthmap, // 深度图像
-                      const double &timestamp,
-                      const vector<std::pair<vector<double>, int>> &detect_result); // 时间戳
+    // cv::Mat TrackRGBD(const cv::Mat &im,       // 彩色图像
+    //                   const cv::Mat &depthmap, // 深度图像
+    //                   const double &timestamp,
+    //                   const vector<std::pair<vector<double>, int>> &detect_result); // 时间戳
+
     // Proccess the given monocular frame
     // Input images: RGB (CV_8UC3) or grayscale (CV_8U). RGB is converted to grayscale.
     // Returns the camera pose (empty if tracking fails).
