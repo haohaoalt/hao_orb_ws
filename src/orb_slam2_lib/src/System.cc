@@ -32,7 +32,7 @@
 #include "Failure.h"
 
 #include "utils.h"
-
+#include "colorutils.h"
 #include <unistd.h>
 
 
@@ -700,7 +700,7 @@ void System::SaveTrajectoryTUM(const string &filename)
     cout << endl << "trajectory saved!" << endl;
 }
 
-// zhanghao 保存轨迹SaveTrajectoryKeyFrameTUM
+// 保存轨迹SaveTrajectoryKeyFrameTUM
 void System::SaveKeyFrameTrajectoryTUM(const string &filename)
 {
     cout << endl << "Saving keyframe trajectory to " << filename << " ..." << endl;
@@ -736,7 +736,7 @@ void System::SaveKeyFrameTrajectoryTUM(const string &filename)
     f.close();
     cout << endl << "trajectory saved!" << endl;
 }
-// zhanghao 保存轨迹SaveTrajectoryKITTI
+// 保存轨迹SaveTrajectoryKITTI
 void System::SaveTrajectoryKITTI(const string &filename)
 {
     cout << endl << "Saving camera trajectory to " << filename << " ..." << endl;
@@ -781,6 +781,10 @@ void System::SaveTrajectoryKITTI(const string &filename)
         Trw = Trw*pKF->GetPose()*Two;
 
         cv::Mat Tcw = (*lit)*Trw;
+
+        // 定义绕x轴旋转90度的旋转矩阵
+        // cv::Mat Rx = (cv::Mat_<double>(3, 3) << 1, 0, 0, 0, 0, -1, 0, 1, 0);
+
         cv::Mat Rwc = Tcw.rowRange(0,3).colRange(0,3).t();
         cv::Mat twc = -Rwc*Tcw.rowRange(0,3).col(3);
 
@@ -819,14 +823,14 @@ void System::SaveMap(const string &filename)
         cerr << "Cannot Write to Mapfile: " << mapfile << std::endl;
         exit(-1);
     }
-    cout << "Saving Mapfile: " << mapfile << " ...." <<std::flush;
+    cout << "Saving Mapfile: " << mapfile << " ...." << std::flush;
     boost::archive::binary_oarchive oa(out, boost::archive::no_header);
     //Saving an instance of Map / KeyFrameDatabase here invokes the relevant serialize function which saves
     //all the Map class member variables (mostly private). We just have to apply an archive operator (<<)
     //to the root item mpMap / mpKeyFrameDatabase.
     oa << mpMap;
     oa << mpKeyFrameDatabase;
-    cout << "Mapfile saved succesfully!" << std::endl;
+    cout << colouredString("Mapfile saved succesfully!", GREEN, REGULAR) << std::endl;
     out.close();
 }
 

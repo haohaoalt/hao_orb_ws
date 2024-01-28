@@ -1593,7 +1593,7 @@ namespace ORB_SLAM2
 
     bool Tracking::Relocalization()
     {
-        cout << colouredString("RELOCALIZATION", YELLOW, BOLD) << "\n";
+        // cout << colouredString("RELOCALIZATION", YELLOW, BOLD) << "\n";
         // Compute Bag of Words Vector
         // STEP RELOCALIZATION 1：计算当前帧特征点的词袋向量
         mCurrentFrame.ComputeBoW();

@@ -122,19 +122,18 @@ int main(int argc, char **argv)
         }
     }
     ros::init(argc, argv, "Stereo");
-    if (ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug))
-    {
-        ros::console::notifyLoggerLevelsChanged();
-    }
-    ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug);
+    // if (ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug))
+    // {
+    //     ros::console::notifyLoggerLevelsChanged();
+    // }
 
-    ROS_DEBUG_STREAM("DEBUG message.");
-    ROS_INFO_STREAM("INFO message.");
-    ROS_WARN_STREAM("WARN message.");
-    ROS_ERROR_STREAM("ERROR message.");
-    ROS_FATAL_STREAM("FATAL message.");
-    ROS_INFO("==========================================");
-    cout << "\033[32m" << "hello world " << "\033[0m" << endl;
+    // ROS_DEBUG_STREAM("DEBUG message.");
+    // ROS_INFO_STREAM("INFO message.");
+    // ROS_WARN_STREAM("WARN message.");
+    // ROS_ERROR_STREAM("ERROR message.");
+    // ROS_FATAL_STREAM("FATAL message.");
+    // ROS_INFO("==========================================");
+
     ros::start();
     if(argc <= 4)
     {
@@ -200,6 +199,9 @@ int main(int argc, char **argv)
     //nh is startup and shutdown of the internal node inside a roscpp program
 
     //set subscribed topics, names changed for ZED Topics
+    // message_filters::Subscriber<sensor_msgs::Image> left_sub(nh, "/kitti/camera_gray_left/image_raw", 1);
+    // message_filters::Subscriber<sensor_msgs::Image> right_sub(nh, "/kitti/camera_gray_right/image_raw", 1);
+
     message_filters::Subscriber<sensor_msgs::Image> left_sub(nh, "/zed2i/zed_node/left_raw/image_raw_gray", 1);
     message_filters::Subscriber<sensor_msgs::Image> right_sub(nh, "/zed2i/zed_node/right_raw/image_raw_gray", 1);
 
@@ -225,7 +227,7 @@ int main(int argc, char **argv)
 
     // Save camera trajectory, you find those files in roborace_ws/devel_isolated/orb_slam2_ros/lib/orb_slam2_ros
     // visualize the trajectories with evo-traj package
-    bool bFileName = (((argc - 3) % 2) == 1);
+    bool bFileName = (((argc - 4) % 2) == 1);
 
     string file_name;
     if (bFileName)

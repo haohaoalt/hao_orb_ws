@@ -298,7 +298,7 @@ void ROSPublisher::octomapWorker()
             got_tf = false;
         }
 
-        cout << colouredString("octomapWorker thread: got TF: ", GREEN, BOLD) << got_tf << "|| "<< "\n";
+        // cout << colouredString("octomapWorker thread: got TF: ", GREEN, BOLD) << got_tf << "|| "<< "\n";
         if (got_tf || ROSPublisher::OCTOMAP_REBUILD)
         {
             clear_octomap_ |= (got_tf != octomap_tf_based_); // clear whenever TF mode changes

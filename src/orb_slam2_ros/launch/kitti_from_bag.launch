@@ -3,7 +3,7 @@
 
 
 <!-- setup arguments -->
-<arg name="sequence" default="g07_kitti_2011_09_30_drive_0027_synced"/>
+<arg name="sequence" default="g10_kitti_2011_09_30_drive_0034_synced"/>
 
 <!-- rosbag arguments -->
 <arg name="bag_data_path" default="/media/hayden/Friday/dataset/KITTI/rosbag/$(arg sequence).bag"/>
@@ -19,13 +19,13 @@
 
 <!-- rosbag replay-->
 <param name="use_sim_time" value="true"/>
-<node pkg="rosbag" type="play" name="player" output="screen" args="$(arg bag_data_path) --clock --pause -r 1">
-  <remap from="kitti/camera_gray_left/image_raw" to="/zed2i/zed_node/left_raw/image_raw_gray"/>
-  <remap from="kitti/camera_gray_right/image_raw" to="/zed2i/zed_node/right_raw/image_raw_gray"/>
+<node pkg="rosbag" type="play" name="player" output="screen" args="$(arg bag_data_path) --clock --pause -r 0.8">
+  <!-- <remap from="kitti/camera_gray_left/image_raw" to="/zed2i/zed_node/left_raw/image_raw_gray"/>
+  <remap from="kitti/camera_gray_right/image_raw" to="/zed2i/zed_node/right_raw/image_raw_gray"/> -->
 </node>
 
 <!-- ORBSLAM2 launch -->
-<arg name="orb_settings_file" default="$(find orb_slam2_ros)/settings/KITTI00-02.yaml"/>
+<arg name="orb_settings_file" default="$(find orb_slam2_ros)/settings/KITTI04-12.yaml"/>
 
 <!-- ORBSLAM2 with Ros -->
 <!-- Provide the correct settings .yaml file to specify camera parameters and ORB feature settings -->
