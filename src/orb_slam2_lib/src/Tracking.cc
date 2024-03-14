@@ -50,6 +50,15 @@
 #include "colorutils.h"
 using namespace std;
 
+// 程序中变量名的第一个字母如果为"m"则表示为类中的成员变量，member
+// 第一个、第二个字母:
+// "p"表示指针数据类型
+// "n"表示int类型
+// "b"表示bool类型
+// "s"表示set类型
+// "v"表示vector数据类型
+// 'l'表示list数据类型
+// "KF"表示KeyFrame数据类型
 namespace ORB_SLAM2
 {
 
@@ -192,6 +201,7 @@ namespace ORB_SLAM2
             else
                 mDepthMapFactor = 1.0f / mDepthMapFactor;
         }
+        //NOTE 逻辑上是若使用重用地图的方式，那么mState就是LOST
         if (bReuseMap)
         {
             mState = LOST;
@@ -445,18 +455,22 @@ namespace ORB_SLAM2
                 {
                     // 如果跟踪状态不成功,那么就只能重定位了
                     // 重定位，从之前的关键帧中找出与当前帧之间拥有充足匹配点的候选帧，利用Ransac迭代，通过PnP求解位姿。
+                    cout << "!mbOnlyTracking + mState != OK =Ransac PnP" << endl;
                     bOK = Relocalization();
                 }
             }
             else
             {
-                // Localization Mode: Local Mapping is deactivated
-
+                // NOTE  Localization Mode: Local Mapping is deactivated
+                cout << colouredString("mbOnlyTracking = ", PURPLE, BOLD) << mbOnlyTracking << endl;
+                cout << mCurrentFrame.mTcw << endl;
+                cout << "=====================================================================" << endl;
                 // 纯追踪模式：不插入新的关键帧，不添加新的地图点，局部地图线程不工作，而且回环检测线程也不会工作，只会追踪地图中现有的地图点。
                 // Step 2：只进行跟踪tracking，局部地图不工作
                 if (mState == LOST)
                 {
                     // Step 2.1 如果跟丢了，只能重定位
+                    cout << colouredString("RRRRRRRRRRRRRRRRRRRRRRRRRRRR mbOnlyTracking + mState == LOST = Relocalization",RED,BOLD) << endl;
                     bOK = Relocalization();
                 }
                 else
@@ -470,7 +484,7 @@ namespace ORB_SLAM2
                     {
                         // In last frame we tracked enough MapPoints in the map
                         // Step 2.2 如果跟踪正常，使用恒速模型 或 参考关键帧跟踪
-                        // cout << colouredString("mVelocity is : ", RED, REGULAR) << mVelocity << endl;
+                        cout << colouredString("mVelocity is : ", RED, REGULAR) << mVelocity << endl;
                         //[0.999735, 0.0067194519, -0.022020478, -0.0009441562;
                         //  -0.0068219034, 0.9999662, -0.0045828605, 0.00057902932;
                         //  0.021988939, 0.004731793, 0.99974698, 0.00028265268;
@@ -509,22 +523,25 @@ namespace ORB_SLAM2
                         // 运动模型得到的位姿
                         cv::Mat TcwMM;
 
+
                         // Step 2.3 当运动模型有效的时候,根据运动模型计算位姿
                         if (!mVelocity.empty())
                         {
+                            cout << colouredString("================mState != LOST mbVO is true, TrackWithMotionModel",GREEN,BOLD) << endl;
                             bOKMM = TrackWithMotionModel();
                             // 将恒速模型跟踪结果暂存到这几个变量中，因为后面重定位会改变这些变量
                             vpMPsMM = mCurrentFrame.mvpMapPoints;
                             vbOutMM = mCurrentFrame.mvbOutlier;
                             TcwMM = mCurrentFrame.mTcw.clone();
                         }
-
                         // Step 2.4 使用重定位的方法来得到当前帧的位姿
+                        cout << colouredString("=====================mState != LOST mbVO is true, Relocalization", YELLOW, BOLD) << endl;
                         bOKReloc = Relocalization();
 
                         // Step 2.5 根据前面的恒速模型、重定位结果来更新状态
                         if (bOKMM && !bOKReloc)
                         {
+                            cout << "bOKMM && !bOKReloc" << endl;
                             mCurrentFrame.SetPose(TcwMM);
                             mCurrentFrame.mvpMapPoints = vpMPsMM;
                             mCurrentFrame.mvbOutlier = vbOutMM;
@@ -546,6 +563,7 @@ namespace ORB_SLAM2
                             mbVO = false;
                         }
                         // 有一个成功我们就认为执行成功了
+                        cout << colouredString("bOK =bOKMM || bOKReloc", YELLOW, REGULAR) << bOK << "CHANGE TO" << (bOKReloc || bOKMM) << endl;
                         bOK = bOKReloc || bOKMM;
                     }
                 }
@@ -683,7 +701,7 @@ namespace ORB_SLAM2
         }
 
         // Store frame pose information to retrieve the complete camera trajectory afterwards.
-        // Step 11：记录位姿信息，用于最后保存所有的轨迹
+        // STEP 11：记录位姿信息，用于最后保存所有的轨迹
         if (!mCurrentFrame.mTcw.empty())
         {
             cv::Mat Tcr = mCurrentFrame.mTcw * mCurrentFrame.mpReferenceKF->GetPoseInverse();
@@ -997,7 +1015,6 @@ namespace ORB_SLAM2
 
     bool Tracking::TrackReferenceKeyFrame()
     {
-        // haoz
         // cout << "-----------------enter TrackReferenceKeyFrame--------------------------" << endl;
         //  Compute Bag of Words vector
         mCurrentFrame.ComputeBoW();
@@ -1109,13 +1126,14 @@ namespace ORB_SLAM2
 
     bool Tracking::TrackWithMotionModel()
     {
-        // cout << "enter TrackWithMotionModel" << endl;
+        cout << colouredString("enter TrackWithMotionModel",GREEN,BOLD) << endl;
         // 最小距离 < 0.9*次小距离 匹配成功，检查旋转
         ORBmatcher matcher(0.9, true);
 
         // Update last frame pose according to its reference keyframe
         // Create "visual odometry" points if in Localization Mode
         // STEP 1：更新上一帧的位姿；对于双目或RGB-D相机，还会根据深度值生成临时地图点
+        //TODO onlyTracking是不更新上一帧的位姿
         UpdateLastFrame();
 
         // STEP 2：根据之前估计的速度，用恒速模型得到当前帧的初始位姿。
@@ -1591,9 +1609,10 @@ namespace ORB_SLAM2
         }
     }
 
+    // NOTE 重定位Tracking::Relocalization()
     bool Tracking::Relocalization()
     {
-        // cout << colouredString("RELOCALIZATION", YELLOW, BOLD) << "\n";
+        cout << colouredString("RELOCALIZATION", YELLOW, BOLD) << "\n";
         // Compute Bag of Words Vector
         // STEP RELOCALIZATION 1：计算当前帧特征点的词袋向量
         mCurrentFrame.ComputeBoW();
@@ -1602,7 +1621,7 @@ namespace ORB_SLAM2
         // Track Lost: Query KeyFrame Database for keyframe candidates for relocalization
         // STEP RELOCALIZATION 2: 用词袋找到与当前帧相似的候选关键帧
         vector<KeyFrame *> vpCandidateKFs = mpKeyFrameDB->DetectRelocalizationCandidates(&mCurrentFrame);
-
+        cout << "vpCandidateKFs.size() is : " << vpCandidateKFs.size() << endl;
         if (vpCandidateKFs.empty())
             return false;
         // NOTE 定义 nKFs 为候选关键帧的数量.
@@ -1632,16 +1651,20 @@ namespace ORB_SLAM2
         for (int i = 0; i < nKFs; i++)
         {
             KeyFrame *pKF = vpCandidateKFs[i];
-            if (pKF->isBad())
+            if (pKF->isBad()){
                 vbDiscarded[i] = true;
+                cout << "pKF is bad" << endl;
+            }        
             else
             {
                 // NOTE 当前帧和候选关键帧用BoW进行快速匹配, 匹配结果记录在vvpMapPointMatches
                 int nmatches = matcher.SearchByBoW(pKF, mCurrentFrame, vvpMapPointMatches[i]);
+                cout << colouredString("nmatches is : ", YELLOW, BOLD) << nmatches << endl;
                 // NOTE 如果当前帧的匹配数小于15, 那么只能放弃这个关键帧.
                 if (nmatches < 15)
                 {
                     vbDiscarded[i] = true;
+                    cout << "nmatches < 15;" << endl;
                     continue;
                 }
                 else
@@ -1674,6 +1697,7 @@ namespace ORB_SLAM2
             for (int i = 0; i < nKFs; i++)
             {
                 // 忽略放弃的
+                cout << "vbDiscarded[i] is : " << vbDiscarded[i] << endl;
                 if (vbDiscarded[i])
                     continue;
 
@@ -1687,7 +1711,7 @@ namespace ORB_SLAM2
                 // STEP RELOCALIZATION 4.1: 通过EPnP算法估计位姿, 迭代5次
                 PnPsolver *pSolver = vpPnPsolvers[i];
                 cv::Mat Tcw = pSolver->iterate(5, bNoMore, vbInliers, nInliers);
-
+                cout << "Tcw is : " << Tcw << endl;
                 // If Ransac reachs max. iterations discard keyframe
                 // 若bNoMore为true, 则表示已经超过RANSAC的最大迭代次数, 放弃当前关键帧.
 
@@ -1701,6 +1725,7 @@ namespace ORB_SLAM2
                 // STEP RELOCALIZATION 4.2: 若EPnP计算出了位姿, 则对内点进行BA优化.
                 if (!Tcw.empty())
                 {
+                    cout << "Tcw is not empty" << endl;
                     Tcw.copyTo(mCurrentFrame.mTcw);
                     // 定义sFound: 作为EPnP里RANSAC后的内点的集合
                     set<MapPoint *> sFound;
@@ -1731,6 +1756,7 @@ namespace ORB_SLAM2
                     // STEP RELOCALIZATION 4.3 若通过词袋匹配的内点较少, 则通过投影的方式对之前未匹配的点进行匹配, 再通过BA进行优化.
                     if (nGood < 50)
                     {
+                        cout << "nGood < 50" << endl;
                         int nadditional = matcher2.SearchByProjection(mCurrentFrame, vpCandidateKFs[i], sFound, 10, 100);
                         // 若通过投影方式匹配了足够的特征点, 则再次使用3D-2D pnp BA优化位姿.
                         if (nadditional + nGood >= 50)
@@ -1773,10 +1799,20 @@ namespace ORB_SLAM2
                 }
             }
         }
-
+        cout << "bMatch is : " << bMatch << endl;
         if (!bMatch)
         {
+            // 如果只有一个 就直接用这个关键帧的位姿
+            if (0) // nKFs == 1
+            {
+                cv::Mat Tcwbow;
+                Tcwbow = vpCandidateKFs[0]->GetPose();
+                cout << "Tcwbow is : " << Tcwbow << endl;
+                mCurrentFrame.mTcw = vpCandidateKFs[0]->GetPose();
+                // return true;
+            }
             mCurrentFrame.mTcw = cv::Mat::zeros(0, 0, CV_32F); // set mTcw back to empty if relocation is failed
+            cout << colouredString("RELOCALIZATION FAILED", RED, BOLD) << endl;
             return false;
         }
         else

@@ -155,7 +155,8 @@ bool System::GenericBuilder::LoadMap(const string &filename)
     ResetMap(pMap);
     pKeyFrameDatabase->SetORBvocabulary(&mVocabulary);
 
-    cout << "Mapfile loaded succesfully!" << std::endl;
+    cout << colouredString("Mapfile loaded succesfully!", GREEN, REGULAR) << std::endl;
+    // NOTE std::flush 用于确保输出流中的内容被立即输出
     cout << "Reconstructing Map" << flush;
     vector<ORB_SLAM2::KeyFrame*> vpKFS = pMap->GetAllKeyFrames();
     unsigned long mnFrameId = 0;
@@ -823,6 +824,7 @@ void System::SaveMap(const string &filename)
         cerr << "Cannot Write to Mapfile: " << mapfile << std::endl;
         exit(-1);
     }
+    // NOTE std::flush 用于确保输出流中的内容被立即输出，而不是等到程序结束或缓冲区填满时才输出。这在某些需要实时显示或立即将输出内容传递到目标设备的情况下非常有用
     cout << "Saving Mapfile: " << mapfile << " ...." << std::flush;
     boost::archive::binary_oarchive oa(out, boost::archive::no_header);
     //Saving an instance of Map / KeyFrameDatabase here invokes the relevant serialize function which saves

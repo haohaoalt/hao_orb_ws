@@ -127,6 +127,7 @@ public:
     list<bool> mlbLost; // mlb开头的变量表示列表（list）型类成员变量，并且它的元素类型是布尔型（bool）
 
     // True if local mapping is deactivated and we are performing only localization
+    //NOTE 这个变量是用来标记是否只进行定位，而不进行建图的
     bool mbOnlyTracking;
 
     void Reset();

@@ -23,6 +23,7 @@
 #include "ORBmatcher.h"
 #include <thread>
 
+#include "colorutils.h"
 namespace ORB_SLAM2
 {
 
@@ -437,10 +438,18 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extra
 
     void Frame::ComputeBoW()
     {
+        // 判断是否以前已经计算过了，计算过了就跳过
         if (mBowVec.empty())
         {
+            cout << colouredString("mBowVec.empty()", BLUE, BOLD) << endl;
+            // 将描述子mDescriptors转换为DBOW要求的输入格式
             vector<cv::Mat> vCurrentDesc = Converter::toDescriptorVector(mDescriptors);
-            mpORBvocabulary->transform(vCurrentDesc, mBowVec, mFeatVec, 4);
+            // 将特征点的描述子转换成词袋向量mBowVec以及特征向量mFeatVec
+            mpORBvocabulary->transform(vCurrentDesc, // 当前的描述子vector
+                                       mBowVec,      // 输出，词袋向量，记录的是单词的id及其对应权重TF-IDF值
+                                       mFeatVec,     // 输出，记录node id及其对应的图像 feature对应的索引
+                                       4);           // 4表示从叶节点向前数的层数
+            cout << colouredString("mBowVec.empty() end", BLUE, BOLD) << mBowVec.empty() << "--"<< mFeatVec.empty() << endl;
         }
     }
 
