@@ -198,12 +198,8 @@ int main(int argc, char **argv)
 
     //nh is startup and shutdown of the internal node inside a roscpp program
 
-    //set subscribed topics, names changed for ZED Topics
-    // message_filters::Subscriber<sensor_msgs::Image> left_sub(nh, "/kitti/camera_gray_left/image_raw", 1);
-    // message_filters::Subscriber<sensor_msgs::Image> right_sub(nh, "/kitti/camera_gray_right/image_raw", 1);
-
-    message_filters::Subscriber<sensor_msgs::Image> left_sub(nh, "/zed2i/zed_node/left_raw/image_raw_gray", 1);
-    message_filters::Subscriber<sensor_msgs::Image> right_sub(nh, "/zed2i/zed_node/right_raw/image_raw_gray", 1);
+    message_filters::Subscriber<sensor_msgs::Image> left_sub(nh, "/zed2i/zed_node/left/image_rect_gray", 1);
+    message_filters::Subscriber<sensor_msgs::Image> right_sub(nh, "/zed2i/zed_node/right/image_rect_gray", 1);
 
     //a policy used by message_filters::sync::Synchronizer to match messages coming on a set of topics
     //can match messages even if they have different time stamps

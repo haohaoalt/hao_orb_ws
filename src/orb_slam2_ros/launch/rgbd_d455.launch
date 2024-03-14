@@ -23,7 +23,7 @@
   仅播放前十秒：rosbag play -u 10 xx.bag
   从120s开始播放，只播放20s，就是播放120s~140s的时间段： rosbag play xx.bag -s 120 -u 20
   -->
-<node pkg="rosbag" type="play" name="player" output="screen" args="$(arg bag_data_path) --clock --pause -r 1">
+<node pkg="rosbag" type="play" name="player" output="log" args="$(arg bag_data_path) --clock --pause -r 1">
   <remap from="/camera/color/image_raw" to="/camera/rgb/image_color"/>
   <remap from="/camera/aligned_depth_to_color/image_raw" to="/camera/depth/image"/>
 </node>
@@ -41,9 +41,7 @@
   <param name="occupancy_gradient_high_slope" value="0.3"/>
 </node>
 
-<!-- <node pkg = "tf" type = "static_transform_publisher" name = "baselink_to_camera" args="0.19 0.0 0.2 0.0 0.0 0.0 /base_link /orb2_camera 40" /> -->
-
-<!-- rqt_image_view for visualization of extracted ORB featues in camera frame -->
-<!-- <node pkg="rqt_image_view" type="rqt_image_view" name="rqt_image_view" args="image:=/orb_slam2/frame" if="$(arg visualize_orb_features)"/> -->
+  <!-- 在rviz中显示-->
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find orb_slam2_ros)/rviz/d455mapping.rviz" required="true" />
 
 </launch>

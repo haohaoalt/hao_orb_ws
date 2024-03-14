@@ -756,7 +756,7 @@ namespace ORB_SLAM2
                 }
             }
 
-            cout << "New map created with " << mpMap->MapPointsInMap() << " points" << endl;
+            cout << colouredString("StereoInitialization New map created with ", GREEN, REGULAR) << mpMap->MapPointsInMap() << " points" << endl;
 
             mpLocalMapper->InsertKeyFrame(pKFini);
 
@@ -938,7 +938,7 @@ namespace ORB_SLAM2
         pKFcur->UpdateConnections();
 
         // Bundle Adjustment
-        cout << "New Map created with " << mpMap->MapPointsInMap() << " points" << endl;
+        cout << colouredString("CreateInitialMapMonocular New Map created with ",GREEN,REGULAR) << mpMap->MapPointsInMap() << " points" << endl;
 
         Optimizer::GlobalBundleAdjustemnt(mpMap, 20);
 
@@ -1126,7 +1126,7 @@ namespace ORB_SLAM2
 
     bool Tracking::TrackWithMotionModel()
     {
-        cout << colouredString("enter TrackWithMotionModel",GREEN,BOLD) << endl;
+        // cout << colouredString("enter TrackWithMotionModel",GREEN,BOLD) << endl;
         // 最小距离 < 0.9*次小距离 匹配成功，检查旋转
         ORBmatcher matcher(0.9, true);
 

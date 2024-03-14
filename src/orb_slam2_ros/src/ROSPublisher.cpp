@@ -162,16 +162,15 @@ T getROSParam(ros::NodeHandle nh, std::string param_name, T default_value)
 
 // Aufruf Constructor
 // ROS 发布者类 ROSPublisher 的构造函数实现
-ROSPublisher::ROSPublisher(Map *map, double frequency, bool bReuseMap_, ros::NodeHandle nh) :
-IMapPublisher(map),
-drawer_(GetMap(), bReuseMap_),
-nh_(std::move(nh)),
-pub_rate_(frequency),
-lastBigMapChange_(-1),
-octomap_tf_based_(false),
-octomap_(getROSParam<float>(nh, "octomap_resolution", ROSPublisher::DEFAULT_OCTOMAP_RESOLUTION)),
-pointcloud_chunks_stashed_(0),
-clear_octomap_(false)
+ROSPublisher::ROSPublisher(Map *map, double frequency, bool bReuseMap_, ros::NodeHandle nh) : IMapPublisher(map),
+                                                                                              drawer_(GetMap(), bReuseMap_),
+                                                                                              nh_(std::move(nh)),
+                                                                                              pub_rate_(frequency),
+                                                                                              lastBigMapChange_(-1),
+                                                                                              octomap_tf_based_(false),
+                                                                                              octomap_(getROSParam<float>(nh, "octomap_resolution", ROSPublisher::DEFAULT_OCTOMAP_RESOLUTION)),
+                                                                                              pointcloud_chunks_stashed_(0),
+                                                                                              clear_octomap_(false)
 {
     // Odys: As in Viewer and Tracking, if a map is loaded we start with state as LOST
     if (bReuseMap_)
@@ -258,7 +257,6 @@ void ROSPublisher::stashMapPoints(bool all_map_points)
  */
 void ROSPublisher::octomapWorker()
 {
-    cout << colouredString("octomapWorker thread: started", GREEN, BOLD) << endl;
     // 记录当前线程循环时间的时间点
     static std::chrono::system_clock::time_point this_cycle_time;
     // 表示相机位姿的 frame
@@ -268,12 +266,10 @@ void ROSPublisher::octomapWorker()
     // 表示相机坐标系原点
     octomap::point3d origin;
     // wait until ORB_SLAM2 is up and running
-    ROS_INFO("octomapWorker thread: waiting for ORBState OK");
     while (orb_state_.state != orb_slam2_ros::ORBState::OK)
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(250));
     }
-    ROS_INFO("octomapWorker thread: starting to work (ORBState is OK)");
     // main thread loop
     // 进入主循环，该循环在线程未停止的情况下一直执行
     while (!isStopped())
@@ -298,7 +294,6 @@ void ROSPublisher::octomapWorker()
             got_tf = false;
         }
 
-        // cout << colouredString("octomapWorker thread: got TF: ", GREEN, BOLD) << got_tf << "|| "<< "\n";
         if (got_tf || ROSPublisher::OCTOMAP_REBUILD)
         {
             clear_octomap_ |= (got_tf != octomap_tf_based_); // clear whenever TF mode changes

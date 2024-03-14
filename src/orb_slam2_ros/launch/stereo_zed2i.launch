@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
 <!-- rosbag arguments -->
-<arg name="sequence" default="zedgnss"/>
+<arg name="sequence" default="A1f"/>
 
 <!-- rosbag arguments -->
-<arg name="bag_data_path"   default="/media/hayden/Friday/dataset/Sensors/carmera/zed2i/out/$(arg sequence).bag"/>
+<arg name="bag_data_path"   default="/media/hayden/Friday/dataset/Sensors/carmera/zed2i/A1f/$(arg sequence).bag"/>
 
 <!-- ORBSLAM arguments -->
 <arg name="octomap_enabled"         		default="false"/>
@@ -22,9 +22,7 @@
   仅播放前十秒：rosbag play -u 10 xx.bag
   从120s开始播放，只播放20s，就是播放120s~140s的时间段： rosbag play xx.bag -s 120 -u 20
   -->
-<node pkg="rosbag" type="play" name="player" output="screen" args="$(arg bag_data_path) --clock --pause -r 0.8">
-  <remap from="/zed2i/zed_node/left/image_rect_gray" to="/zed2i/zed_node/left_raw/image_raw_gray"/>
-  <remap from="/zed2i/zed_node/right/image_rect_gray" to="/zed2i/zed_node/right_raw/image_raw_gray"/>
+<node pkg="rosbag" type="play" name="player" output="log" args="$(arg bag_data_path) --clock --pause -r 0.8">
 </node>
 
 
