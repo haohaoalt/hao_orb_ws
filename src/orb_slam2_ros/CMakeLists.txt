@@ -21,7 +21,7 @@ if(NOT OpenCV_FOUND)
     endif()
 endif()
 
-find_package(Pangolin REQUIRED)
+# find_package(Pangolin REQUIRED)
 
 find_package(catkin REQUIRED COMPONENTS
   orb_slam2_lib
