@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+
+
+<!-- setup arguments -->
+<arg name="sequence" default="g07_kitti_2011_09_30_drive_0027_synced"/>
+
+<!-- rosbag arguments -->
+<arg name="bag_data_path" default="/media/hayden/Friday/dataset/KITTI/rosbag/$(arg sequence).bag"/>
+
+
+
+<!-- ORBSLAM arguments -->
+<arg name="octomap_enabled"         		default="false"/>
+
+<!-- feature visualizer arguments -->
+<arg name="visualize_orb_features"          default="true"/>
+
+<!-- ORBSLAM2 launch -->
+<arg name="orb_settings_file" default="$(find orb_slam2_ros)/settings/KITTI04-12.yaml"/>
+
+<!-- ORBSLAM2 with Ros -->
+<!-- Provide the correct settings .yaml file to specify camera parameters and ORB feature settings -->
+<node pkg="orb_slam2_ros" type="Stereo_kitti" name="orb_slam2" args="$(find orb_slam3_lib)/Vocabulary/ORBvoc.bin $(arg orb_settings_file) False $(arg sequence)" cwd="node" output="screen">
+  <param name="octomap_enabled" value="$(arg octomap_enabled)"/>
+  <!-- needed for projected/gradient map-->
+  <param name="octomap_resolution" value="0.02"/>
+  <param name="occupancy_projection_min_height" value="-0.1"/>
+  <param name="occupancy_gradient_max_height" value="0.2"/>
+  <param name="occupancy_gradient_nb_erosions" value="1"/>
+  <param name="occupancy_gradient_low_slope" value="0.3"/>
+  <param name="occupancy_gradient_high_slope" value="0.5"/>
+</node>
+
+<!-- rqt_image_view for visualization of extracted ORB featues in camera frame -->
+<node pkg="rqt_image_view" type="rqt_image_view" name="rqt_image_view" args="image:=/orb_slam2/frame" if="$(arg visualize_orb_features)"/>
+
+<!-- rosbag replay-->
+<param name="use_sim_time" value="true"/>
+<node pkg="rosbag" type="play" name="player" output="log" args="$(arg bag_data_path) --clock -r 0.5"> </node>
+
+
+</launch>
