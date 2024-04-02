@@ -10,6 +10,7 @@
 #include "Thirdparty/yolov5_tensorrtx/common.hpp"
 #include "Thirdparty/yolov5_tensorrtx/calibrator.h"
 #include "Thirdparty/yolov5_tensorrtx/preprocess.h"
+#include "colorutils.h"
 
 #define USE_FP16  // set USE_INT8 or USE_FP16 or USE_FP32
 #define DEVICE 0  // GPU id
@@ -42,14 +43,14 @@ namespace ORB_SLAM3
 
 YoloDetector::YoloDetector():mbFinishRequested(false)
 {
-    std::ifstream f("/home/ylsdb20/dev/hao_orb_ws/model/coco.names");
+    std::ifstream f("model/coco.names");
     std::string name = "";
     while (std::getline(f, name))
     {
         this->class_names.push_back(name);
     }
 
-    std::string engine_name = "/home/ylsdb20/dev/hao_orb_ws/model/yolov5x.engine";
+    std::string engine_name = "model/yolov5x.engine";
     std::ifstream file(engine_name, std::ios::binary);
     if (!file.good()) {
         std::cerr << "read " << engine_name << " error!" << std::endl;
@@ -89,34 +90,47 @@ YoloDetector::YoloDetector():mbFinishRequested(false)
     CUDA_CHECK(cudaMallocHost((void**)&img_host, MAX_IMAGE_INPUT_SIZE_THRESH * 3));
     // prepare input data cache in device memory
     CUDA_CHECK(cudaMalloc((void**)&img_device, MAX_IMAGE_INPUT_SIZE_THRESH * 3));
-    std::cout << "load model success" << std::endl;
+    std::cout << colouredString("load model success",GREEN,BOLD) << std::endl;
 }
 
+// 基于 TensorRT 进行目标检测的具体实现
 void YoloDetector::DetectByTensorRT(cv::Mat image, std::vector<YoloBoundingBox>& yoloBoundingBoxList)
 {
+    // 首先，对传入的图像进行克隆，确保不会修改原始图像
     cv::Mat img = image.clone();
     if (img.empty()) return;
+    // 将克隆后的图像放入图像缓冲区中，imgs_buffer 可能是一个图像缓冲区数组
     imgs_buffer[0] = img;
+    // 声明一个指针 buffer_idx，指向输入缓冲区中的数据，inputIndex 可能是指向输入缓冲区的索引
     float* buffer_idx = (float*)buffers[inputIndex];
+    // 计算输入图像和目标图像的大小，INPUT_H 和 INPUT_W 可能是目标图像的高度和宽度
     size_t  size_image = img.cols * img.rows * 3;
     size_t  size_image_dst = INPUT_H * INPUT_W * 3;
-    //copy data to pinned memory
+    // copy data to pinned memory
+    // 将输入图像数据复制到主机内存中。
     memcpy(img_host,img.data,size_image);
-    //copy data to device memory
+    // copy data to device memory
+    // 异步地将输入图像数据从主机内存复制到设备内存中，其中 stream 可能是一个 CUDA 流对象
     CUDA_CHECK(cudaMemcpyAsync(img_device,img_host,size_image,cudaMemcpyHostToDevice,stream));
+    // 调用一个预处理函数，对输入图像进行预处理，可能包括调整大小、归一化等操作，然后将结果写入到输入缓冲区中。
     preprocess_kernel_img(img_device, img.cols, img.rows, buffer_idx, INPUT_W, INPUT_H, stream);
     // Run inference
+    // 调用 doInference 函数执行推理操作，可能是基于 TensorRT 的推理函数，传递了推理上下文、CUDA 流、输入和输出缓冲区等参数。
     doInference(*context, stream, (void**)buffers, prob, BATCH_SIZE);
     auto end = std::chrono::system_clock::now();
     std::vector<std::vector<Yolo::Detection>> batch_res(1);
     auto& res = batch_res[0];
+    // cout << colouredString("prob[0]:",YELLOW,REGULAR) << prob[0] << endl;
+    // 对推理结果进行非极大值抑制（NMS）处理，可能是过滤掉重叠度较高的边界框
     nms(res, &prob[0], CONF_THRESH, NMS_THRESH);
+    // 遍历经过 NMS 处理后的检测结果，并将符合条件的边界框添加到 yoloBoundingBoxList 中
+    // 同时将符合条件的目标区域添加到跟踪器对象中。
     for(int i=0; i<res.size(); i++)
     {
         cv::Rect2f rect= get_rect(img,res[i].bbox);
-        if(class_names[res[i].class_id]=="person")
+        if(class_names[res[i].class_id]=="person"){
             mpTracker->mvDynamicArea.push_back(rect);
-            //hayden: add dynamic area
+        }
         yoloBoundingBoxList.push_back(YoloBoundingBox(rect, class_names[res[i].class_id], res[i].conf));
     }
 }
@@ -132,14 +146,14 @@ void YoloDetector::Run() {
         std::vector<YoloBoundingBox> yoloBoundingBoxLists;
         if(mbYOLO)
         {
-#ifdef TIMES
-            std::chrono::steady_clock::time_point yolo1 = std::chrono::steady_clock::now();
-#endif
+            #ifdef TIMES
+                std::chrono::steady_clock::time_point yolo1 = std::chrono::steady_clock::now();
+            #endif
                 DetectByTensorRT(mImg, mpTracker->yoloBoundingBoxList);
-#ifdef TIMES
-            std::chrono::steady_clock::time_point yolo2 = std::chrono::steady_clock::now();
-            cout << "YOLO time:" << std::chrono::duration_cast<std::chrono::duration<double> >(yolo2 - yolo1).count() <<endl;
-#endif
+            #ifdef TIMES
+                std::chrono::steady_clock::time_point yolo2 = std::chrono::steady_clock::now();
+                cout << "YOLO time:" << std::chrono::duration_cast<std::chrono::duration<double> >(yolo2 - yolo1).count() <<endl;
+            #endif
         }
         mpTracker->mbNewSegImgFlag=true;
         if(CheckFinish())

@@ -1583,6 +1583,8 @@ Sophus::SE3f Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, co
     return mCurrentFrame.GetPose();
 }
 
+// 从外部获取图像数据并传递给 YoloDetector 对象。
+// 函数实现了将传入的图像数据传递给 YoloDetector 对象，并通知 YoloDetector 对象有新的图像到达。
 void Tracking::GetImg(const cv::Mat& img)
 {
     unique_lock<mutex> lock(mpYoloDetector->mMutexGetNewImg);
