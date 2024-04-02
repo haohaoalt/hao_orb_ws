@@ -312,6 +312,7 @@ void PointCloudMapping::save()
     // writer.write("./result.ply", *globalMap);
     cout << "globalMap save finished" << endl;
 }
+//TODO: 优化点云更新
 void PointCloudMapping::updatecloud(Map &curMap)
 {
     std::unique_lock<std::mutex> lck(updateMutex);

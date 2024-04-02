@@ -32,7 +32,8 @@ class FeatureVector:
     }
 
 public:
-
+  //TODO: FOR ORBEX
+  typedef std::map<NodeId, std::vector<unsigned int> > super;
   /**
    * Constructor
    */

@@ -16,8 +16,6 @@
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
-
-
 #include "System.h"
 #include "Converter.h"
 #include <thread>
@@ -32,12 +30,22 @@
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/archive/xml_oarchive.hpp>
+#include "colorutils.h"
 
 namespace ORB_SLAM3
 {
 
 Verbose::eLevel Verbose::th = Verbose::VERBOSITY_NORMAL;
 
+/**
+ * @brief 系统的构造函数，将会启动其他的线程
+ * @param strVocFile 词袋文件所在路径
+ * @param strSettingsFile 配置文件所在路径
+ * @param sensor 传感器类型
+ * @param bUseViewer 是否使用可视化界面
+ * @param initFr initFr表示初始化帧的id,开始设置为0
+ * @param strSequence 序列名,在跟踪线程和局部建图线程用得到
+ */
 System::System(const string &strVocFile, const string &strSettingsFile, const eSensor sensor,
                const bool bUseViewer, const int initFr, const string &strSequence):
     mSensor(sensor), mpViewer(static_cast<Viewer*>(NULL)), mbReset(false), mbResetActiveMap(false),
@@ -66,18 +74,22 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     else if(mSensor==IMU_RGBD)
         cout << "RGB-D-Inertial" << endl;
 
-    //Check settings file
+    // Check settings file
+    // STEP 1:读取配置文件
     cv::FileStorage fsSettings(strSettingsFile.c_str(), cv::FileStorage::READ);
+    // 如果打开失败，就输出错误信息
     if(!fsSettings.isOpened())
     {
        cerr << "Failed to open settings file at: " << strSettingsFile << endl;
        exit(-1);
     }
 
+    // 查看配置文件版本，不同版本有不同处理方法
     cv::FileNode node = fsSettings["File.version"];
     if(!node.empty() && node.isString() && node.string() == "1.0"){
         settings_ = new Settings(strSettingsFile,mSensor);
 
+        // 保存及加载地图的名字
         mStrLoadAtlasFromFile = settings_->atlasLoadFile();
         mStrSaveAtlasToFile = settings_->atlasSaveFile();
 
@@ -97,7 +109,7 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
             mStrSaveAtlasToFile = (string)node;
         }
     }
-
+    // 是否激活回环，默认是开着的
     node = fsSettings["loopClosing"];
     bool activeLC = true;
     if(!node.empty())
@@ -106,29 +118,33 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     }
 
     mStrVocabularyFilePath = strVocFile;
-
+    // ORBSLAM3新加的多地图管理功能，这里加载Atlas标识符
     bool loadedAtlas = false;
 
     if(mStrLoadAtlasFromFile.empty())
     {
         //Load ORB Vocabulary
         cout << endl << "Loading ORB Vocabulary. This could take a while..." << endl;
-
+        // 建立一个新的ORB字典
         mpVocabulary = new ORBVocabulary();
         // bool bVocLoad = mpVocabulary->loadFromTextFile(strVocFile);
+        // 读取预训练好的ORB字典并返回成功/失败标志
         bool bVocLoad = mpVocabulary->loadFromBinaryFile(strVocFile);
+        // 如果加载失败，就输出错误信息
         if(!bVocLoad)
         {
             cerr << "Wrong path to vocabulary. " << endl;
             cerr << "Falied to open at: " << strVocFile << endl;
             exit(-1);
         }
-        cout << "Vocabulary loaded!" << endl << endl;
+        cout << colouredString("Vocabulary loaded!",GREEN,BOLD) << endl;
 
-        //Create KeyFrame Database
+        // Create KeyFrame Database
+        // STEP 创建关键帧数据库
         mpKeyFrameDatabase = new KeyFrameDatabase(*mpVocabulary);
 
-        //Create the Atlas
+        // Create the Atlas
+        //STEP 创建多地图，参数0表示初始化关键帧id为0
         cout << "Initialization of Atlas from scratch " << endl;
         mpAtlas = new Atlas(0);
     }
@@ -163,6 +179,7 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
             cout << "Error to load the file, please try with other session file or vocabulary file" << endl;
             exit(-1);
         }
+        //TODO: 此处说明loadatlas 是不新建 KeyFrameDatabase的
         //mpKeyFrameDatabase = new KeyFrameDatabase(*mpVocabulary);
 
 
@@ -179,7 +196,7 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
         //usleep(10*1000*1000);
     }
 
-
+    // 如果是有imu的传感器类型，设置mbIsInertial = true;以后的跟踪和预积分将和这个标志有关
     if (mSensor==IMU_STEREO || mSensor==IMU_MONOCULAR || mSensor==IMU_RGBD)
         mpAtlas->SetInertialSensor();
 
@@ -591,6 +608,7 @@ void System::Shutdown()
 
     if(!mStrSaveAtlasToFile.empty())
     {
+        std::cout << "开始保存地图" << std::endl;
         Verbose::PrintMess("Atlas saving to file " + mStrSaveAtlasToFile, Verbose::VERBOSITY_NORMAL);
         SaveAtlas(FileType::BINARY_FILE);
     }

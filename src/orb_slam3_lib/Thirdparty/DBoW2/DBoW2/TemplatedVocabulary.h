@@ -1,6 +1,6 @@
 /**
  * This is a modified version of TemplatedVocabulary.h from DBoW2 (see below).
- * Added functions: Save and Load from text files without using cv::FileStorage.
+ * Added functions: Save and Load from text/atlas/binary files without using cv::FileStorage.
  * Date: August 2015
  * Raúl Mur-Artal
  */
@@ -249,7 +249,12 @@ public:
    * Saves the vocabulary into a text file
    * @param filename
    */
-  void saveToTextFile(const std::string &filename) const;  
+  void saveToTextFile(const std::string &filename) const;
+  /**
+   * Saves the vocabulary into a binary file
+   * @param filename
+   */
+  void saveToBinaryFile(const std::string &filename) const;
 
   /**
    * Saves the vocabulary into a file
@@ -1448,7 +1453,8 @@ bool TemplatedVocabulary<TDescriptor,F>::loadFromBinaryFile(const std::string &f
   m_nodes.clear();
   m_nodes.resize(nb_nodes+1);
   m_nodes[0].id = 0;
-  char buf[size_node]; int nid = 1;
+  char* buf = new char[size_node]; 
+  int nid = 1;
   while (!f.eof()) {
 	f.read(buf, size_node);
 	m_nodes[nid].id = nid;
@@ -1471,6 +1477,7 @@ bool TemplatedVocabulary<TDescriptor,F>::loadFromBinaryFile(const std::string &f
 	nid+=1;
   }
   f.close();
+  delete[] buf;
   return true;
 }
 
@@ -1497,6 +1504,40 @@ void TemplatedVocabulary<TDescriptor,F>::saveToTextFile(const std::string &filen
     }
 
     f.close();
+}
+
+//TODO: save to binary file
+template<class TDescriptor, class F>
+void TemplatedVocabulary<TDescriptor,F>::saveToBinaryFile(const std::string &filename) const {
+  fstream f;
+  f.open(filename.c_str(), ios_base::out|ios::binary);
+  unsigned int nb_nodes = m_nodes.size();
+  cout << "nb_nodes: " << nb_nodes << endl;
+  float _weight;
+  cout << "sizeof(m_nodes[0].parent): " << sizeof(m_nodes[0].parent) << endl;
+  cout << "F::L*sizeof(char): " << F::L*sizeof(char) << endl;
+  cout << "sizeof(_weight): " << sizeof(_weight) << endl;
+  cout << "sizeof(bool): " << sizeof(bool) << endl;
+  unsigned int size_node = sizeof(m_nodes[0].parent) + F::L*sizeof(char) + sizeof(_weight) + sizeof(bool); //F::L
+  cout << "size_node: " << size_node << endl;
+  f.write((char*)&nb_nodes, sizeof(nb_nodes));
+  f.write((char*)&size_node, sizeof(size_node));
+  f.write((char*)&m_k, sizeof(m_k));
+  f.write((char*)&m_L, sizeof(m_L));
+  f.write((char*)&m_scoring, sizeof(m_scoring));
+  f.write((char*)&m_weighting, sizeof(m_weighting));
+  for(size_t i=1; i<nb_nodes;i++) {
+	const Node& node = m_nodes[i];
+	f.write((char*)&node.parent, sizeof(node.parent));
+  cout << "===========node.parent: " << node.parent << endl;
+	f.write((char*)node.descriptor.data, F::L);//F::L
+  cout << "===========node.descriptor.data: F::L " << F::L << "data: " << F::toString(node.descriptor) << endl;
+  _weight = node.weight; f.write((char*)&_weight, sizeof(_weight));
+  cout << "===========node.weight: " << node.weight << endl;
+	bool is_leaf = node.isLeaf(); f.write((char*)&is_leaf, sizeof(is_leaf)); // i put this one at the end for alignement....
+  cout << "===========is_leaf: " << is_leaf << endl;
+  }
+  f.close();
 }
 
 // --------------------------------------------------------------------------

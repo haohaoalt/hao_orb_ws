@@ -67,6 +67,8 @@ class BowVector:
     }
 
 public:
+	//TODO: for orbex
+	typedef std::map<WordId, WordValue> super;
 
 	/** 
 	 * Constructor
