@@ -173,7 +173,7 @@ void LoopClosing::Run()
                         mg2oMergeScw = mg2oMergeSlw;
 
                         //mpTracker->SetStepByStep(true);
-
+                        // NOTE  Verbose::VERBOSITY_QUIET 表示静默模式，即不输出任何消息
                         Verbose::PrintMess("*Merge detected", Verbose::VERBOSITY_QUIET);
 
 #ifdef REGISTER_TIMES
@@ -193,7 +193,7 @@ void LoopClosing::Run()
                         double timeMergeTotal = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(time_EndMerge - time_StartMerge).count();
                         vdMergeTotal_ms.push_back(timeMergeTotal);
 #endif
-
+                        //TODO 合并地图？
                         Verbose::PrintMess("Merge finished!", Verbose::VERBOSITY_QUIET);
                     }
 

@@ -1483,6 +1483,10 @@ namespace ORB_SLAM3
     }
 #endif
 
+    /**
+     * @brief 保存地图
+     * @param type 保存类型
+     */
     void System::SaveAtlas(int type)
     {
         if (!mStrSaveAtlasToFile.empty())
@@ -1490,6 +1494,7 @@ namespace ORB_SLAM3
             // clock_t start = clock();
 
             // Save the current session
+            // 1. 预保存想要保存的数据
             mpAtlas->PreSave();
 
             string pathSaveFileName = "./";
@@ -1514,17 +1519,28 @@ namespace ORB_SLAM3
             }
             else if (type == BINARY_FILE) // File binary
             {
+                // 使用 Boost 序列化库的 binary_oarchive 将地图对象、词汇表名称和校验和写入二进制文件中。
                 cout << colouredString("Starting to write the save binary file",GREEN,BOLD) << endl;
                 std::remove(pathSaveFileName.c_str());
                 std::ofstream ofs(pathSaveFileName, std::ios::binary);
+
+                // string pathSaveFileName = "map.bin";
+                // std::ofstream ofs1(pathSaveFileName, std::ios::binary);
                 boost::archive::binary_oarchive oa(ofs);
+
+                // boost::archive::binary_oarchive oabin(ofs1);
                 cout << "saving ... " << endl;
                 cout << "Vocabulary name: " << strVocabularyName << endl;
                 oa << strVocabularyName;
                 cout << "Vocabulary checksum: " << strVocabularyChecksum << endl;
                 oa << strVocabularyChecksum;
                 oa << mpAtlas;
-                cout << colouredString("End to write save binary file",GREEN,BOLD) << endl;
+                cout << colouredString("End to write save osa file", GREEN, BOLD) << endl;
+
+                // cout << "saving bin ..." << endl;
+                // oabin << mpAtlas;
+                // oabin << mpKeyFrameDatabase;
+                // cout << colouredString("End to write save bin file", GREEN, BOLD) << endl;
             }
         }
     }
@@ -1563,6 +1579,7 @@ namespace ORB_SLAM3
                 cout << "Load file not found" << endl;
                 return false;
             }
+            // 使用Boost序列化库的 text_iarchive 或 binary_iarchive 类，从文件中反序列化地图数据并存储在相应的变量中。
             boost::archive::binary_iarchive ia(ifs);
             ia >> strFileVoc;
             ia >> strVocChecksum;
@@ -1582,7 +1599,7 @@ namespace ORB_SLAM3
                 cout << "-Vocabulary name: " << strFileVoc << endl;
                 return false; // Both are differents
             }
-
+            // 如果校验和匹配，则将关键帧数据库和ORB词汇表设置为加载的地图的关键帧数据库和ORB词汇表。
             mpAtlas->SetKeyFrameDababase(mpKeyFrameDatabase);
             mpAtlas->SetORBVocabulary(mpVocabulary);
             mpAtlas->PostLoad();

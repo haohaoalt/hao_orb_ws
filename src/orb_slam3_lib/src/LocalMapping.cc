@@ -864,6 +864,9 @@ namespace ORB_SLAM3
         return mbStopRequested;
     }
 
+    /**
+     * @brief 释放当前还在缓冲区中的关键帧指针
+     */
     void LocalMapping::Release()
     {
         unique_lock<mutex> lock(mMutexStop);

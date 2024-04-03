@@ -88,11 +88,12 @@ thresh: 1.0
 # Map.save_map: 1 
 # Map.load_map: 0
 # =========================================================
-# System.SaveAtlasToFile: "atlas"
-# System.UpdateAtlasToFile: "atlas"
+System.SaveAtlasToFile: "atlas"
 # System.LoadAtlasFromFile: "atlas"
+
+# System.UpdateAtlasToFile: "atlas"
 # =========================================================
-System.SaveAtlas: "atlas"
-System.UpdateAtlas: "atlas"
-System.LoadAtlas: "atlas"
+# System.SaveAtlas: "atlas"
+# System.UpdateAtlas: "atlas"
+# System.LoadAtlas: "atlas"
 # -----------------------------------------------------------------------------------------

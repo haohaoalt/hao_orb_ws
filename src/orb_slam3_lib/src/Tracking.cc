@@ -1885,6 +1885,14 @@ namespace ORB_SLAM3
         // TODO: To implement...
     }
 
+    //TODO: ORBSLAM3 Tracking::Track
+    /**
+     * @brief 跟踪过程，包括恒速模型跟踪、参考关键帧跟踪、局部地图跟踪
+     * track包含两部分：估计运动、跟踪局部地图
+     * Step 1：初始化
+     * Step 2：跟踪
+     * Step 3：记录位姿信息，用于轨迹复现
+     */
     void Tracking::Track()
     {
 
@@ -1895,27 +1903,29 @@ namespace ORB_SLAM3
                 usleep(500);
             mbStep = false;
         }
-
+        // Step 1 如局部建图里认为IMU有问题，重置当前活跃地图
         if (mpLocalMapper->mbBadImu)
         {
             cout << "TRACK: Reset map because local mapper set the bad imu flag " << endl;
             mpSystem->ResetActiveMap();
             return;
         }
-
+        // 从Atlas中取出当前active的地图
         Map *pCurrentMap = mpAtlas->GetCurrentMap();
         if (!pCurrentMap)
         {
             cout << "ERROR: There is not an active map in the atlas" << endl;
         }
-
+        // Step 2 处理时间戳异常的情况
         if (mState != NO_IMAGES_YET)
         {
             if (mLastFrame.mTimeStamp > mCurrentFrame.mTimeStamp)
             {
+                // 如果当前图像时间戳比前一帧图像时间戳小，说明出错了，清除imu数据，创建新的子地图
                 cerr << "ERROR: Frame with a timestamp older than previous frame detected!" << endl;
                 unique_lock<mutex> lock(mMutexImuQueue);
                 mlQueueImuData.clear();
+                // 创建新地图
                 CreateMapInAtlas();
                 return;
             }
@@ -1923,23 +1933,28 @@ namespace ORB_SLAM3
             {
                 // cout << mCurrentFrame.mTimeStamp << ", " << mLastFrame.mTimeStamp << endl;
                 // cout << "id last: " << mLastFrame.mnId << "    id curr: " << mCurrentFrame.mnId << endl;
+                // 如果当前图像时间戳和前一帧图像时间戳大于1s，说明时间戳明显跳变了，重置地图后直接返回
+                // 根据是否是imu模式,进行imu的补偿
                 if (mpAtlas->isInertial())
                 {
-
+                    // 如果当前地图imu成功初始化
                     if (mpAtlas->isImuInitialized())
                     {
                         cout << "Timestamp jump detected. State set to LOST. Reseting IMU integration..." << endl;
                         if (!pCurrentMap->GetIniertialBA2())
                         {
+                            // 如果当前子图中imu没有经过BA2，重置active地图，也就是之前的数据不要了
                             mpSystem->ResetActiveMap();
                         }
                         else
                         {
+                            // 如果当前子图中imu进行了BA2，重新创建新的子图，保存当前地图
                             CreateMapInAtlas();
                         }
                     }
                     else
                     {
+                        // 如果当前子图中imu还没有初始化，重置active地图
                         cout << "Timestamp jump detected, before IMU initialization. Reseting..." << endl;
                         mpSystem->ResetActiveMap();
                     }
@@ -1947,7 +1962,7 @@ namespace ORB_SLAM3
                 }
             }
         }
-
+        // Step 3 IMU模式下设置IMU的Bias参数,还要保证上一帧存在
         if ((mSensor == System::IMU_MONOCULAR || mSensor == System::IMU_STEREO || mSensor == System::IMU_RGBD) && mpLastKeyFrame)
             mCurrentFrame.SetNewBias(mpLastKeyFrame->GetImuBias());
 
@@ -1957,12 +1972,13 @@ namespace ORB_SLAM3
         }
 
         mLastProcessedState = mState;
-
+        // Step 4 IMU模式且没有创建地图的情况下对IMU数据进行预积分
         if ((mSensor == System::IMU_MONOCULAR || mSensor == System::IMU_STEREO || mSensor == System::IMU_RGBD) && !mbCreatedMap)
         {
 #ifdef REGISTER_TIMES
             std::chrono::steady_clock::time_point time_StartPreIMU = std::chrono::steady_clock::now();
 #endif
+            // IMU数据进行预积分
             PreintegrateIMU();
 #ifdef REGISTER_TIMES
             std::chrono::steady_clock::time_point time_EndPreIMU = std::chrono::steady_clock::now();
@@ -1974,10 +1990,14 @@ namespace ORB_SLAM3
         mbCreatedMap = false;
 
         // Get Map Mutex -> Map cannot be changed
+        // 地图更新时加锁。保证地图不会发生变化
+        // 疑问:这样子会不会影响地图的实时更新?
+        // 回答：主要耗时在构造帧中特征点的提取和匹配部分,在那个时候地图是没有被上锁的,有足够的时间更新地图
         unique_lock<mutex> lock(pCurrentMap->mMutexMapUpdate);
 
         mbMapUpdated = false;
 
+        // 判断地图id是否更新了
         int nCurMapChangeIndex = pCurrentMap->GetMapChangeIndex();
         int nMapChangeIndex = pCurrentMap->GetLastMapChange();
         if (nCurMapChangeIndex > nMapChangeIndex)
@@ -1986,10 +2006,12 @@ namespace ORB_SLAM3
             mbMapUpdated = true;
         }
 
+        // Step 5 初始化
         if (mState == NOT_INITIALIZED)
         {
             if (mSensor == System::STEREO || mSensor == System::RGBD || mSensor == System::IMU_STEREO || mSensor == System::IMU_RGBD)
             {
+                // 双目RGBD相机的初始化共用一个函数
                 StereoInitialization();
             }
             else
@@ -2007,12 +2029,14 @@ namespace ORB_SLAM3
 
             if (mpAtlas->GetAllMaps().size() == 1)
             {
+                // 如果当前地图是第一个地图，记录当前帧id为第一帧
                 mnFirstFrameId = mCurrentFrame.mnId;
             }
         }
         else
         {
             // System is initialized. Track Frame.
+            // Step 6 系统成功初始化，下面是具体跟踪过程
             bool bOK;
 
 #ifdef REGISTER_TIMES
@@ -2026,12 +2050,19 @@ namespace ORB_SLAM3
                 // State OK
                 // Local Mapping is activated. This is the normal behaviour, unless
                 // you explicitly activate the "only tracking" mode.
+                // 跟踪进入正常SLAM模式，有地图更新
                 if (mState == OK)
                 {
 
                     // Local Mapping might have changed some MapPoints tracked in last frame
+                    // Step 6.1 检查并更新上一帧被替换的MapPoints
+                    // 局部建图线程则可能会对原有的地图点进行替换.在这里进行检查
                     CheckReplacedInLastFrame();
 
+                    // Step 6.2 运动模型是空的并且imu未初始化或刚完成重定位，跟踪参考关键帧；否则恒速模型跟踪
+                    // 第一个条件,如果运动模型为空并且imu未初始化,说明是刚开始第一帧跟踪，或者已经跟丢了。
+                    // 第二个条件,如果当前帧紧紧地跟着在重定位的帧的后面，我们用重定位帧来恢复位姿
+                    // mnLastRelocFrameId 上一次重定位的那一帧
                     if ((!mbVelocity && !pCurrentMap->isImuInitialized()) || mCurrentFrame.mnId < mnLastRelocFrameId + 2)
                     {
                         Verbose::PrintMess("TRACK: Track with respect to the reference KF ", Verbose::VERBOSITY_DEBUG);
@@ -2044,9 +2075,14 @@ namespace ORB_SLAM3
                         if (!bOK)
                             bOK = TrackReferenceKeyFrame();
                     }
-
+                    // 新增了一个状态RECENTLY_LOST，主要是结合IMU看看能不能拽回来
+                    // Step 6.3 如果经过跟踪参考关键帧、恒速模型跟踪都失败的话，并满足一定条件就要标记为RECENTLY_LOST或LOST
                     if (!bOK)
                     {
+                        // 条件1：如果当前帧距离上次重定位成功不到1s
+                        //        mnFramesToResetIMU 表示经过多少帧后可以重置IMU，一般设置为和帧率相同，对应的时间是1s
+                        // 条件2：单目+IMU 或者 双目+IMU模式
+                        // 同时满足条件1，2，标记为LOST
                         if (mCurrentFrame.mnId <= (mnLastRelocFrameId + mnFramesToResetIMU) &&
                             (mSensor == System::IMU_MONOCULAR || mSensor == System::IMU_STEREO || mSensor == System::IMU_RGBD))
                         {
@@ -2055,6 +2091,9 @@ namespace ORB_SLAM3
                         else if (pCurrentMap->KeyFramesInMap() > 10)
                         {
                             // cout << "KF in map: " << pCurrentMap->KeyFramesInMap() << endl;
+                            // 条件1：当前地图中关键帧数目较多（大于10）
+                            // 条件2（隐藏条件）：当前帧距离上次重定位帧超过1s（说明还比较争气，值的救）或者非IMU模式
+                            // 同时满足条件1，2，则将状态标记为RECENTLY_LOST，后面会结合IMU预测的位姿看看能不能拽回来
                             mState = RECENTLY_LOST;
                             mTimeStampLost = mCurrentFrame.mTimeStamp;
                         }

@@ -299,13 +299,17 @@ bool Atlas::isImuInitialized()
     return mpCurrentMap->isImuInitialized();
 }
 
+// NOTE: This function is called from System::SaveAtlas用于在保存地图之前进行预处理操作
+// 包括更新初始化关键帧 ID、按地图 ID 对地图进行排序、移除空地图以及调用地图的 PreSave 函数进行进一步的预处理
 void Atlas::PreSave()
 {
+    // 检查当前地图 mpCurrentMap 是否存在
     if(mpCurrentMap){
+        // 检查地图列表 mspMaps 是否为空，以及上次初始化关键帧的 ID 是否小于当前地图的最大关键帧 ID。如果是，则更新 mnLastInitKFidMap 为当前地图的最大关键帧 ID 加 1，表示下一个初始化关键帧的 ID
         if(!mspMaps.empty() && mnLastInitKFidMap < mpCurrentMap->GetMaxKFid())
             mnLastInitKFidMap = mpCurrentMap->GetMaxKFid()+1; //The init KF is the next of current maximum
     }
-
+    // 定义了一个结构体 compFunctor 作为比较函数对象，用于按地图 ID 对地图指针进行排序
     struct compFunctor
     {
         inline bool operator()(Map* elem1 ,Map* elem2)
@@ -313,22 +317,28 @@ void Atlas::PreSave()
             return elem1->GetId() < elem2->GetId();
         }
     };
+    // 将地图列表 mspMaps 中的地图指针复制到备份列表 mvpBackupMaps 中，
     std::copy(mspMaps.begin(), mspMaps.end(), std::back_inserter(mvpBackupMaps));
+    // 并使用 compFunctor 对备份列表进行排序，以便在保存地图之前按地图 ID 进行排序
     sort(mvpBackupMaps.begin(), mvpBackupMaps.end(), compFunctor());
-
+    // 创建一个存储几何相机指针的集合 spCams，将 mvpCameras 中的几何相机指针添加到集合中。
     std::set<GeometricCamera*> spCams(mvpCameras.begin(), mvpCameras.end());
+    //遍历备份地图列表 mvpBackupMaps 中的每个地图 pMi，
     for(Map* pMi : mvpBackupMaps)
     {
+        // 如果地图指针为空或者地图已被标记为坏地图，则跳过该地图；否则执行以下步骤：
         if(!pMi || pMi->IsBad())
             continue;
-
+        // /检查地图中是否有关键帧，如果地图中的关键帧数量为 0，则将地图标记为坏地图并继续下一个地图的处理。
         if(pMi->GetAllKeyFrames().size() == 0) {
             // Empty map, erase before of save it.
             SetMapBad(pMi);
             continue;
         }
+        // 调用地图的 PreSave 函数，传递几何相机指针集合作为参数，进行地图保存前的预处理操作。
         pMi->PreSave(spCams);
     }
+    // 最后，调用 RemoveBadMaps 函数，从地图列表中移除坏地图
     RemoveBadMaps();
 }
 

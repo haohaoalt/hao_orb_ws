@@ -24,6 +24,8 @@
 
 #include<mutex>
 
+#include "colorutils.h"
+
 using namespace std;
 
 namespace ORB_SLAM3
@@ -99,6 +101,7 @@ void KeyFrameDatabase::clearMap(Map* pMap)
 
 vector<KeyFrame*> KeyFrameDatabase::DetectLoopCandidates(KeyFrame* pKF, float minScore)
 {
+    cout << colouredString("KeyFrameDatabase::DetectLoopCandidates", PURPLE, REGULAR) << endl;
     set<KeyFrame*> spConnectedKeyFrames = pKF->GetConnectedKeyFrames();
     list<KeyFrame*> lKFsSharingWords;
 
@@ -227,6 +230,7 @@ vector<KeyFrame*> KeyFrameDatabase::DetectLoopCandidates(KeyFrame* pKF, float mi
 
 void KeyFrameDatabase::DetectCandidates(KeyFrame* pKF, float minScore,vector<KeyFrame*>& vpLoopCand, vector<KeyFrame*>& vpMergeCand)
 {
+    cout << colouredString("KeyFrameDatabase::DetectCandidates", PURPLE, REGULAR) << endl;
     set<KeyFrame*> spConnectedKeyFrames = pKF->GetConnectedKeyFrames();
     list<KeyFrame*> lKFsSharingWordsLoop,lKFsSharingWordsMerge;
 
@@ -467,6 +471,7 @@ void KeyFrameDatabase::DetectCandidates(KeyFrame* pKF, float minScore,vector<Key
 
 void KeyFrameDatabase::DetectBestCandidates(KeyFrame *pKF, vector<KeyFrame*> &vpLoopCand, vector<KeyFrame*> &vpMergeCand, int nMinWords)
 {
+    cout << colouredString("KeyFrameDatabase::DetectBestCandidates", PURPLE, REGULAR) << endl;
     list<KeyFrame*> lKFsSharingWords;
     set<KeyFrame*> spConnectedKF;
 

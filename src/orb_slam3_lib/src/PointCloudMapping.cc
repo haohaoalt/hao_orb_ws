@@ -307,7 +307,7 @@ namespace ORB_SLAM3
         mabIsUpdating = true;
         currentvpKFs = curMap.GetAllKeyFrames();
         // loopbusy = true;
-        cout << "开始点云更新" << endl;
+        cout << colouredString("PointCloudMapping::updatecloud", YELLOW, REGULAR) << endl;
         pcl::PointCloud<pcl::PointXYZRGBA>::Ptr tmpGlobalMap(new pcl::PointCloud<pcl::PointXYZRGBA>);
         pcl::PointCloud<pcl::PointXYZRGBA>::Ptr curPointCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
         pcl::PointCloud<pcl::PointXYZRGBA>::Ptr tmpGlobalMapFilter(new pcl::PointCloud<pcl::PointXYZRGBA>());
@@ -331,7 +331,7 @@ namespace ORB_SLAM3
                 // tmpGlobalMap->swap(*tmpGlobalMapFilter);///////////////////////////////////////
             }
         }
-        cout << "点云更新完成" << endl;
+        cout << colouredString("PointCloudMapping::updatecloud DONE!", YELLOW, REGULAR) << endl;
         {
             std::unique_lock<std::mutex> lck(mMutexGlobalMap);
             globalMap = tmpGlobalMap;
