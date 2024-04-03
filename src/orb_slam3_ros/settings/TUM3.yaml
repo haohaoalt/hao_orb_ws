@@ -67,7 +67,14 @@ Viewer.ViewpointX: 0.0
 Viewer.ViewpointY: -0.7
 Viewer.ViewpointZ: -1.8
 Viewer.ViewpointF: 500.0
+#--------------------------------------------------------------------------------------------
+# Loop closure
+loopClosing: 1
+#--------------------------------------------------------------------------------------------
 
+#--------------------------------------------------------------------------------------------
+# Dynamic SLAM Parameters
+#--------------------------------------------------------------------------------------------
 UseDynamic: 1
 PointCloudMapping: 0
 PointCloudMapping.Resolution: 0.01
@@ -81,7 +88,11 @@ thresh: 1.0
 # Map.save_map: 1 
 # Map.load_map: 0
 # =========================================================
-System.SaveAtlasToFile: "atlas"
+# System.SaveAtlasToFile: "atlas"
 # System.UpdateAtlasToFile: "atlas"
 # System.LoadAtlasFromFile: "atlas"
+# =========================================================
+System.SaveAtlas: "atlas"
+System.UpdateAtlas: "atlas"
+System.LoadAtlas: "atlas"
 # -----------------------------------------------------------------------------------------

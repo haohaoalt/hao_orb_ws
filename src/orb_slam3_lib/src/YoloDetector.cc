@@ -90,7 +90,8 @@ YoloDetector::YoloDetector():mbFinishRequested(false)
     CUDA_CHECK(cudaMallocHost((void**)&img_host, MAX_IMAGE_INPUT_SIZE_THRESH * 3));
     // prepare input data cache in device memory
     CUDA_CHECK(cudaMalloc((void**)&img_device, MAX_IMAGE_INPUT_SIZE_THRESH * 3));
-    std::cout << colouredString("load model success",GREEN,BOLD) << std::endl;
+    std::cout << colouredString("load YOLO model success",GREEN,BOLD) << std::endl;
+    cout << "===============================" << endl;
 }
 
 // 基于 TensorRT 进行目标检测的具体实现

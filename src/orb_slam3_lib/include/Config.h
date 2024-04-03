@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <string>
 
+//HACKS to remove dynamic objects
 #define REMOVE_DYNAMIC_OBJECT
 //#define TIMES
 namespace ORB_SLAM3

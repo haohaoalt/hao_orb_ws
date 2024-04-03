@@ -115,7 +115,7 @@ cv::Mat FrameDrawer::DrawFrame(float imageScale)
         cvtColor(im,im,cv::COLOR_GRAY2BGR);
 
     //Draw
-    //Draw yolo rect
+    //TODO FrameDrawer Draw yolo rect
 #ifdef REMOVE_DYNAMIC_OBJECT
      for(int i = 0; i < this->yoloBoundingBoxList.size(); i++){
          cv::Rect2f tempRect = this->yoloBoundingBoxList[i].GetRect();
@@ -172,7 +172,32 @@ cv::Mat FrameDrawer::DrawFrame(float imageScale)
         mnTrackedVO=0;
         const float r = 5;
         int n = vCurrentKeys.size();
-        for(int i=0;i<n;i++)
+        // TODO 理解上动态点绘制 mvKeysDynamic1.size();
+        int num = mvKeysDynamic1.size();
+        for(int i = 0; i < num; i++){
+            cv::Point2f point;
+            if(imageScale != 1.f)
+            {
+                point = mvKeysDynamic1[i].pt / imageScale;
+            }else{
+                point = mvKeysDynamic1[i].pt;
+            }
+            cv::circle(im, point, 3, cv::Scalar(0, 0, 255), -1);
+        }
+        //TODO 静态点的绘制
+        int staticpoints = mvKeysDynamic2.size();
+        for(int i = 0; i < staticpoints; i++){
+            cv::Point2f point;
+            if(imageScale != 1.f)
+            {
+                point = mvKeysDynamic2[i].pt / imageScale;
+            }else{
+                point = mvKeysDynamic2[i].pt;
+            }
+            cv::circle(im, point, 3, cv::Scalar(139, 69, 19), -1); // 棕色
+        }
+        //TODO 绿色关键帧中的特征点绘制 有绿色小方框
+        for (int i = 0; i < n; i++)
         {
             if(vbVO[i] || vbMap[i])
             {

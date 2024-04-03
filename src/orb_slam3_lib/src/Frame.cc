@@ -38,6 +38,9 @@ std::vector<float> Err;
 std::vector<double> epiErr, EpiErr;
 std::vector<uchar> status;
 
+std::vector<cv::KeyPoint> mvKeysDynamic1;
+std::vector<cv::KeyPoint> mvKeysDynamic2;
+
 namespace ORB_SLAM3
 {
 
@@ -209,15 +212,25 @@ namespace ORB_SLAM3
           mpCamera(pCamera), mpCamera2(nullptr), mbHasPose(false), mbHasVelocity(false)
     {
         // Frame ID
+        //STEP RGBD FRAME
+        // STEP 1 帧的ID 自增
         mnId = nNextId++;
 
         // Scale Level Info
+        // STEP 2 计算图像金字塔的参数
+        // 获取图像金字塔的层数
         mnScaleLevels = mpORBextractorLeft->GetLevels();
+        // 获得层与层之间的缩放比
         mfScaleFactor = mpORBextractorLeft->GetScaleFactor();
+        // 计算上面缩放比的对数
         mfLogScaleFactor = log(mfScaleFactor);
+        // 获取每层图像的缩放因子
         mvScaleFactors = mpORBextractorLeft->GetScaleFactors();
+        // 同样获取每层图像缩放因子的倒数
         mvInvScaleFactors = mpORBextractorLeft->GetInverseScaleFactors();
+        // 高斯模糊的时候，使用的方差
         mvLevelSigma2 = mpORBextractorLeft->GetScaleSigmaSquares();
+        // 获取sigma^2的倒数
         mvInvLevelSigma2 = mpORBextractorLeft->GetInverseScaleSigmaSquares();
 
         // ORB extraction
@@ -230,14 +243,16 @@ namespace ORB_SLAM3
 
         mTimeORB_Ext = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(time_EndExtORB - time_StartExtORB).count();
 #endif
-
+        // 获取特征点的个数
         N = mvKeys.size();
 
+        // 如果这一帧没有能够提取出特征点，那么就直接返回了
         if (mvKeys.empty())
             return;
-
+        // STEP3 用OpenCV的矫正函数、内参对提取到的特征点进行矫正
         UndistortKeyPoints();
 
+        // STEP4 获取图像的深度，并且根据这个深度推算其右图中匹配的特征点的视差
         ComputeStereoFromRGBD(imDepth);
 
         mvpMapPoints = vector<MapPoint *>(N, static_cast<MapPoint *>(NULL));
@@ -248,6 +263,7 @@ namespace ORB_SLAM3
         mvbOutlier = vector<bool>(N, false);
 
         // This is done only for the first Frame (or after a change in the calibration)
+        // STEP5 计算去畸变后图像边界，将特征点分配到网格中。这个过程一般是在第一帧或者是相机标定参数发生变化之后进行
         if (mbInitialComputations)
         {
             ComputeImageBounds(imGray);
@@ -265,6 +281,8 @@ namespace ORB_SLAM3
             mbInitialComputations = false;
         }
 
+        // 计算假想的基线长度 baseline= mbf/fx
+        // 后面要对从RGBD相机输入的特征点,结合相机基线长度,焦距,以及点的深度等信息来计算其在假想的"右侧图像"上的匹配点
         mb = mbf / fx;
 
         if (pPrevF)
@@ -288,6 +306,7 @@ namespace ORB_SLAM3
         monoLeft = -1;
         monoRight = -1;
 
+        // 将特征点分配到图像网格中
         AssignFeaturesToGrid();
     }
 
@@ -338,19 +357,28 @@ namespace ORB_SLAM3
         mTimeORB_Ext = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(time_EndExtORB - time_StartExtORB).count();
 #endif
 
+// NOTE REMOVE_DYNAMIC_OBJECT BEGIN
 #ifdef REMOVE_DYNAMIC_OBJECT
+        // 创建了一个新的变量 imGrayT 并将其初始化为当前图像帧 imGray。这里使用了深拷贝，以便在计算光流时保留原始图像帧
         cv::Mat imGrayT = imGray;
+        // 代码检查上一帧图像 imGrayPre 是否存在数据。如果上一帧图像存在数据，则表示不是第一帧图像，可以计算光流；
+        // 如果不存在数据，则将当前图像 imGray 赋值给 imGrayPre，并继续等待新的图像帧的到来。
         if (imGrayPre.data)
         {
-            // Step1 计算光流
+            // STEP 1 计算光流
+            // 光流计算是一种用于估计图像中像素点的运动模式的技术。通过计算相邻帧之间的像素点的位移，可以了解物体在图像中的运动情况。
             EpiloarWithFundMatrix(imGrayPre, imGray);
+            // imGrayPre 就存储了当前图像帧的数据，以备下一次光流计算使用
             std::swap(imGrayPre, imGrayT);
         }
         else
             std::swap(imGrayPre, imGrayT);
 
+        // 通过一个 while 循环等待新的图像帧的到来
         while (!mpTracker->isNewSegmentImgArrived())
         {
+            // mpTracker->isNewSegmentImgArrived() 返回 true，表示新的图像帧已经到达
+            // 在等待期间，使用 usleep(1) 函数来释放 CPU 资源，以免造成资源浪费
             usleep(1);
         }
 
@@ -360,7 +388,7 @@ namespace ORB_SLAM3
 #ifdef TIMES
             std::chrono::steady_clock::time_point RemoveMovingPointsWithEpiAndYOLO1 = std::chrono::steady_clock::now();
 #endif
-            // Step2 用YOLO检测出来的物体的边界框，去除掉运动物体
+            // STEP 2 用YOLO检测出来的物体的边界框，去除掉运动物体
             RemoveMovingPointsWithEpiAndYOLO(epiErr, imGray, imDepth);
 
 #ifdef TIMES
@@ -368,7 +396,7 @@ namespace ORB_SLAM3
             cout << "RemoveMovingPointsWithEpiAndYOLO time:" << std::chrono::duration_cast<std::chrono::duration<double>>(RemoveMovingPointsWithEpiAndYOLO2 - RemoveMovingPointsWithEpiAndYOLO1).count() << endl;
             std::chrono::steady_clock::time_point RemoveMovingKeyPoints1 = std::chrono::steady_clock::now();
 #endif
-            // Step3 去除掉运动物体
+            // STEP 3 去除掉运动物体
             RemoveMovingKeyPoints(imGray, imDepth);
 
 #ifdef TIMES
@@ -377,6 +405,7 @@ namespace ORB_SLAM3
 #endif
         }
 #endif
+        // NOTE REMOVE_DYNAMIC_OBJECT END
         // 获取特征点的个数
         N = mvKeys.size();
 
@@ -384,10 +413,8 @@ namespace ORB_SLAM3
         if (mvKeys.empty())
             return;
 
-        // Step 4 用OpenCV的矫正函数、内参对提取到的特征点进行矫正
         UndistortKeyPoints();
 
-        // Step 5 获取图像的深度，并且根据这个深度推算其右图中匹配的特征点的视差
         ComputeStereoFromRGBD(imDepth);
 
         // 初始化本帧的地图点
@@ -400,7 +427,6 @@ namespace ORB_SLAM3
         mvbOutlier = vector<bool>(N, false);
 
         // This is done only for the first Frame (or after a change in the calibration)
-        //  Step 5 计算去畸变后图像边界，将特征点分配到网格中。这个过程一般是在第一帧或者是相机标定参数发生变化之后进行
         if (mbInitialComputations)
         {
             // 计算去畸变后图像的边界
@@ -451,20 +477,23 @@ namespace ORB_SLAM3
         // 将特征点分配到图像网格中
         AssignFeaturesToGrid();
     }
-    // hayden： 光流法计算极线距离
+    // TODO： 光流法计算极线距离
     void Frame::EpiloarWithFundMatrix(const cv::Mat &ImGrayPre, const cv::Mat &ImGray)
     {
+        // 代码清空了存储光流计算结果的容器 Curpoint, Prepoint, epiErr, state, status, Err。
         Curpoint.clear();
         Prepoint.clear();
         epiErr.clear();
         state.clear();
         status.clear();
         Err.clear();
+        // 遍历了关键点向量 mvKeys 中的每个关键点，并将其坐标存储在 Curpoint 中，作为当前帧的特征点
         for (auto it : mvKeys)
             Curpoint.emplace_back(it.pt);
 #ifdef TIMES
         std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 #endif
+        // 调用了 OpenCV 的光流计算函数 cv::calcOpticalFlowPyrLK 计算当前帧图像 ImGray 和上一帧图像 ImGrayPre 之间的光流，并存储光流的结果在 Prepoint 中
         cv::calcOpticalFlowPyrLK(ImGray, ImGrayPre, Curpoint, Prepoint, state, Err, cv::Size(21, 21), 3);
 #ifdef TIMES
         std::chrono::steady_clock::time_point optical = std::chrono::steady_clock::now();
@@ -475,6 +504,7 @@ namespace ORB_SLAM3
         std::vector<cv::Point2f> CurpointT = Curpoint;
         std::vector<float> flowErr = Err;
         sort(flowErr.begin(), flowErr.end());
+        // 代码对光流误差进行了处理，通过计算光流误差的中位数 th，将光流误差较大的特征点标记为需要剔除。
         float th = flowErr[0.5 * flowErr.size()];
         std::vector<bool> isErase(Curpoint.size(), true);
 
@@ -487,18 +517,22 @@ namespace ORB_SLAM3
             }
         }
 
+        // 经过处理后，保留了光流误差较小的特征点，并存储在 Curpoint 和 Prepoint 中，然后计算剩余特征点的数量 N。
         reduceVector(Curpoint, isErase);
         reduceVector(Prepoint, isErase);
         int N = Curpoint.size();
 
+        // 如果剩余特征点的数量大于 8，则继续进行后续处理。首先根据剩余特征点的数量，选择不同的计算基础矩阵的方法：
         if (N > 8)
         {
             cv::Mat FundMatrix;
+            // 如果特征点数量小于 15，则使用所有特征点进行计算；否则，随机抽样一部分特征点进行计算。
             if (Curpoint.size() < 15)
             {
 #ifdef TIMES
                 std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
 #endif
+                // 使用计算得到的基础矩阵，
                 FundMatrix = cv::findFundamentalMat(CurpointT, PrepointT,
                                                     cv::FM_RANSAC, 0.1, 0.99, status);
 #ifdef TIMES
@@ -506,7 +540,7 @@ namespace ORB_SLAM3
                 cout << "fundmat time:" << std::chrono::duration_cast<std::chrono::duration<double>>(fundmat - t2).count() << endl;
                 std::chrono::steady_clock::time_point CalcEpiDistChi21 = std::chrono::steady_clock::now();
 #endif
-                // 计算极线距离
+                // 计算极线距离 调用函数 CalcEpiDistChi2 计算极线距离，并将计算结果存储在 epiErr 中
                 CalcEpiDistChi2(mvKeys, PrepointT, FundMatrix, state);
 #ifdef TIMES
                 std::chrono::steady_clock::time_point CalcEpiDistChi22 = std::chrono::steady_clock::now();
@@ -591,16 +625,20 @@ namespace ORB_SLAM3
         return false;
     }
 
+    // NOTE 根据极线距离和YOLO检测结果来移除动态物体的特征点
     void Frame::RemoveMovingPointsWithEpiAndYOLO(std::vector<double> epiErr, const cv::Mat &ImGray,
                                                  const cv::Mat &ImDepth)
     {
+        // 如果输入的极线距离为空，则直接返回，不进行处理
         if (epiErr.empty())
             return;
+        // 首先定义了一些辅助容器 staticPoints 和 epiErrStatic 用于存储静态特征点和其对应的极线距离
         std::vector<cv::KeyPoint> staticPoints;
         std::vector<double> epiErrStatic;
         std::vector<cv::KeyPoint> _mvKeys;
         cv::Mat _mDescriptors;
         // 没有检测到物体，仅做极线匹配
+        // 如果YOLO检测结果为空，表示没有检测到物体，此时仅进行极线匹配，遍历所有特征点，根据其极线距离判断是否为动态物体，将静态特征点存储在 _mvKeys 中，动态特征点存储在 mvKeysDynamic 中，并更新描述子 _mDescriptors。
         if (mpTracker->yoloBoundingBoxList.empty())
         {
             for (int i = 0; i < mvKeys.size(); i++)
@@ -622,8 +660,9 @@ namespace ORB_SLAM3
         }
         else
         {
-            // std::cout << "I'm in else yoloBoundingBoxList.size()" << mpTracker->yoloBoundingBoxList.size() << std::endl;
-            // 遍历所有点
+            // 如果YOLO检测结果不为空，则遍历所有特征点和YOLO检测出的边界框，判断每个特征点是否在任何一个边界框内。
+            // 如果特征点在某个边界框内，则将其添加到对应的边界框的关键点列表 KeyPointsInBox 中，并保存其极线距离 epiErr。
+            //  遍历所有点
             for (int i = 0; i < mvKeys.size(); i++)
             {
                 // 遍历所有框
@@ -643,6 +682,7 @@ namespace ORB_SLAM3
                 }
             }
             // NOTE 计算每个框的动静属性
+            // 计算每个边界框的动态属性
             for (auto it = mpTracker->yoloBoundingBoxList.begin(); it != mpTracker->yoloBoundingBoxList.end(); ++it)
             {
                 int M = it->epiErr.size();
@@ -652,11 +692,14 @@ namespace ORB_SLAM3
                 if (M == 0)
                     continue;
                 sort(it->epiErr.begin(), it->epiErr.end());
+                // 对于每个边界框，根据其关键点的极线距离，计算出动态性概率 proStatic
                 double proStatic = (it->epiErr[M1] + it->epiErr[M2] + it->epiErr[M3]) / 3.0;
                 // cout << "Frame.cc " << it->GetLabel() << ": " << proStatic << endl;
                 // cout << mpTracker->yoloBoundingBoxList.size() << endl;
+                // NOTE 如果该概率小于阈值（1.0），则将其标记为动态或静态
                 if (proStatic < 1.0)
                 {
+                    // 如果标签是 "person"，则阈值更高（0.96），否则是普通物体（0.8）。最终更新了边界框的动态属性 isDynamic 和 proStatic
                     if (it->GetLabel() == "person" && proStatic < 0.96)
                     {
                         it->isDynamic = true;
@@ -677,8 +720,10 @@ namespace ORB_SLAM3
         }
     }
 
+    // NOTE 移除运动特征点，并保留静态特征点。下面对其进行详细解释
     void Frame::RemoveMovingKeyPoints(const cv::Mat &ImGray, const cv::Mat &ImDepth)
     {
+        // 首先检查YOLO边界框列表是否为空，或者极线距离列表是否为空，如果是，则直接返回，不进行处理。
         if (mpTracker->yoloBoundingBoxList.empty() || epiErr.empty())
             return;
         //    for(auto it=mpTracker->yoloBoundingBoxList.begin(); it!=mpTracker->yoloBoundingBoxList.end(); ++it)
@@ -688,15 +733,18 @@ namespace ORB_SLAM3
         //        else if(it==mpTracker->yoloBoundingBoxList.end())
         //            return;
         //    }
+       
         cv::Mat imDepth = ImDepth;
         cv::Mat imGray = ImGray;
         std::vector<cv::KeyPoint> _mvKeys;
         cv::Mat _mDescriptors;
         std::vector<cv::KeyPoint> tmpKeys;
-
+        mvKeysDynamic1.clear();
+        mvKeysDynamic2.clear();
         for (auto it = mpTracker->yoloBoundingBoxList.begin(); it != mpTracker->yoloBoundingBoxList.end(); ++it)
         {
-            // hayden 对于每个目标框，代码计算框内关键点深度的平均值和标准差。
+            // TODO 对于每个目标框，代码计算框内关键点深度的平均值和标准差。
+            // 对于YOLO边界框列表中的每个边界框，计算其内部关键点的深度平均值和标准差。这一步的目的是为了判断每个边界框内的关键点是否属于静态物体。
             int BoxSize = it->KeyPointsInBox.size();
             if (BoxSize == 0)
                 continue;
@@ -720,7 +768,8 @@ namespace ORB_SLAM3
             }
             it->stdcov = std::sqrt(sum / M);
         }
-        // 对所有点进行判断
+        // NOTE 遍历所有的关键点，对每个关键点进行以下操作
+        //  对所有点进行判断
         for (auto kp = mvKeys.begin(); kp != mvKeys.end(); ++kp)
         {
             bool flag = true;
@@ -728,6 +777,7 @@ namespace ORB_SLAM3
             int i = kp - mvKeys.begin();
             for (auto it = mpTracker->yoloBoundingBoxList.begin(); it != mpTracker->yoloBoundingBoxList.end(); ++it)
             {
+                // 对于属于 "person" 类别且静态属性概率小于 0.96 的边界框，根据其深度和极线距离进行判断。如果满足条件，则将标记置为动态。
                 if (it->GetLabel() == "person" && it->proStatic < 0.96)
                 {
                     if (isInBox(*kp, *it, true) && flag == true)
@@ -747,27 +797,32 @@ namespace ORB_SLAM3
                 {
                     if (isInBox(*kp, *it))
                     {
+                        // 对于被标记为动态的边界框内的关键点，根据其极线距离进行判断。如果极线距离大于阈值 0.2，则将标记置为静态。
                         if (EpiErr[i] > 0.2)
                             flag = false;
                     }
                 }
             }
+            // 如果极线距离大于 1.0，则直接将标记置为静态。
             if (EpiErr[i] > 1.0)
                 flag = false;
+            // 如果标记为静态，则将其存储在 _mvKeys 中，否则存储在 mvKeysDynamic 中。
             if (flag || Isstatic)
             {
-                //            epiErr2.emplace_back(epiErr[i]);
+                // epiErr2.emplace_back(epiErr[i]);
                 _mvKeys.emplace_back(mvKeys[i]);
+                mvKeysDynamic2.emplace_back(mvKeys[i]);
                 _mDescriptors.push_back(mDescriptors.row(i));
             }
             else
             {
-                //            epiErr2.emplace_back(epiErr[i]);
+                // epiErr2.emplace_back(epiErr[i]);
                 mvKeysDynamic.emplace_back(mvKeys[i]);
+                mvKeysDynamic1.emplace_back(mvKeys[i]);
                 mDescriptorsDynamic.push_back(mDescriptors.row(i));
             }
         }
-        // hayden OVDOUTPUT 给ORB 函数将保留下来的关键点 _mvKeys 替换原始关键点数组 mvKeys，并将保留下来的描述子矩阵 _mDescriptors 替换原始描述子矩阵 mDescriptors
+        // TODO OVDOUTPUT 给ORB 函数将保留下来的关键点 _mvKeys 替换原始关键点数组 mvKeys，并将保留下来的描述子矩阵 _mDescriptors 替换原始描述子矩阵 mDescriptors
         mvKeys.swap(_mvKeys);
         mDescriptors = _mDescriptors.clone();
     }

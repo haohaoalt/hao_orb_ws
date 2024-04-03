@@ -19,7 +19,7 @@
 
 #include "Viewer.h"
 #include <pangolin/pangolin.h>
-
+#include <colorutils.h>
 #include <mutex>
 
 namespace ORB_SLAM3
@@ -218,7 +218,7 @@ void Viewer::Run()
 
     float trackedImageScale = mpTracker->GetImageScale();
 
-    cout << "Starting the Viewer" << endl;
+    cout << colouredString("Starting the Viewer",BLUE,BOLD) << endl;
     while(1)
     {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

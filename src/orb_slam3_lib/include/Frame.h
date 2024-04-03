@@ -40,6 +40,9 @@
 #include "Eigen/Core"
 #include "sophus/se3.hpp"
 
+extern std::vector<cv::KeyPoint> mvKeysDynamic1;
+extern std::vector<cv::KeyPoint> mvKeysDynamic2;
+
 namespace ORB_SLAM3
 {
 #define FRAME_GRID_ROWS 48
