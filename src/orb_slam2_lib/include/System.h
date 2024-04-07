@@ -35,6 +35,8 @@
 // for map file io
 #include <fstream>
 
+#include <boost/filesystem.hpp>
+
 namespace ORB_SLAM2
 {
 

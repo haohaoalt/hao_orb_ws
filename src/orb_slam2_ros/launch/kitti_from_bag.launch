@@ -1,20 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
 
-
 <!-- setup arguments -->
 <arg name="sequence" default="g07_kitti_2011_09_30_drive_0027_synced"/>
 
 <!-- rosbag arguments -->
-<arg name="bag_data_path" default="/media/hayden/Friday/dataset/KITTI/rosbag/$(arg sequence).bag"/>
-
-
+<arg name="bag_data_path" default="/media/ylsdb20/Friday/dataset/KITTI/rosbag/$(arg sequence).bag"/>
 
 <!-- ORBSLAM arguments -->
-<arg name="octomap_enabled"         		default="false"/>
+<arg name="octomap_enabled"         		default="true"/>
 
-<!-- feature visualizer arguments -->
-<arg name="visualize_orb_features"          default="true"/>
 
 <!-- ORBSLAM2 launch -->
 <arg name="orb_settings_file" default="$(find orb_slam2_ros)/settings/KITTI04-12.yaml"/>
@@ -32,12 +27,15 @@
   <param name="occupancy_gradient_high_slope" value="0.5"/>
 </node>
 
+<!-- feature visualizer arguments -->
 <!-- rqt_image_view for visualization of extracted ORB featues in camera frame -->
-<node pkg="rqt_image_view" type="rqt_image_view" name="rqt_image_view" args="image:=/orb_slam2/frame" if="$(arg visualize_orb_features)"/>
+<arg name="visualize_orb_features" default="true"/>
+<node pkg="rqt_image_view" type="rqt_image_view" name="rqt_image_view" args="image:=/orbslamex/frame" if="$(arg visualize_orb_features)"/>
+
+<!-- tf -->
+ <node pkg = "tf" type = "static_transform_publisher" name = "baselink_to_camera" args="0.19 0.0 0.2 0.0 0.0 0.0 baselink /orbslamex/camera 40" />
 
 <!-- rosbag replay-->
 <param name="use_sim_time" value="true"/>
 <node pkg="rosbag" type="play" name="player" output="log" args="$(arg bag_data_path) --clock -r 0.5"> </node>
-
-
 </launch>

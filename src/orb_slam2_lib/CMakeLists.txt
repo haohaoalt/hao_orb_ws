@@ -26,6 +26,8 @@ else()
   message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
 endif()
 
+add_definitions(-w)
+
 add_subdirectory(Thirdparty/DBoW2)
 add_subdirectory(Thirdparty/g2o)
 
@@ -106,6 +108,6 @@ endif()
 target_link_libraries(${PROJECT_NAME} ${BOOST_SERIALIZATION})
 
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Vocabulary)
-add_executable(bin_vocabulary Vocabulary/bin_vocabulary.cpp)
-target_link_libraries(bin_vocabulary DBoW2 ${OpenCV_LIBS})
+# set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Vocabulary)
+# add_executable(bin_vocabulary Vocabulary/bin_vocabulary.cpp)
+# target_link_libraries(bin_vocabulary DBoW2 ${OpenCV_LIBS})

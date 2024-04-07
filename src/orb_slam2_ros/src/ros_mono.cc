@@ -120,7 +120,6 @@ int main(int argc, char **argv)
     if (bFileName)
     {
         file_name = string(argv[argc - 1]);
-        cout << "file name: " << file_name << endl;
         // Save camera trajectory
         const string kf_file = "kf_" + string(argv[argc - 1]) + ".txt";
         SLAM.SaveKeyFrameTrajectoryTUM(kf_file);

@@ -1,7 +1,4 @@
 **/build/*
 **/devel/*
-src/orb_slam3_lib/model/*
 .vscode/*
-src/orb_slam3_lib/*
-src/orb_slam3_ros/*
-
+maps/*

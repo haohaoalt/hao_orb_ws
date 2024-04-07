@@ -22,6 +22,8 @@
 #include <nav_msgs/Odometry.h>
 #include "colorutils.h"
 
+#include <boost/filesystem.hpp>
+
 using namespace ORB_SLAM2;
 
 // 通过检查存储整数1的内存的第一个字节来判断系统的字节序是否为大端序。如果第一个字节是1，那么系统是大端序
@@ -162,6 +164,7 @@ T getROSParam(ros::NodeHandle nh, std::string param_name, T default_value)
 
 // Aufruf Constructor
 // ROS 发布者类 ROSPublisher 的构造函数实现
+// NOTE 这是构造函数的声明，它接受一个指向 Map 类对象的指针 map，一个 double 类型的频率 frequency，一个 bool 类型的 bReuseMap_，以及一个 ros::NodeHandle 类型的 nh。
 ROSPublisher::ROSPublisher(Map *map, double frequency, bool bReuseMap_, ros::NodeHandle nh) : IMapPublisher(map),
                                                                                               drawer_(GetMap(), bReuseMap_),
                                                                                               nh_(std::move(nh)),
@@ -171,8 +174,11 @@ ROSPublisher::ROSPublisher(Map *map, double frequency, bool bReuseMap_, ros::Nod
                                                                                               octomap_(getROSParam<float>(nh, "octomap_resolution", ROSPublisher::DEFAULT_OCTOMAP_RESOLUTION)),
                                                                                               pointcloud_chunks_stashed_(0),
                                                                                               clear_octomap_(false)
+// 这是构造函数的初始化列表，用于初始化类的成员变量。初始化列表以冒号 : 开始，后面跟着逗号分隔的成员初始化器列表。
 {
     // Odys: As in Viewer and Tracking, if a map is loaded we start with state as LOST
+    // 这里根据 bReuseMap_ 的值设置 orb_state_.state 的状态。如果 bReuseMap_ 为真，则设置为 orb_slam2_ros::ORBState::LOST；否则设置为 orb_slam2_ros::ORBState::UNKNOWN。
+    //NOTE 此处说明地图复用的基础是在地图丢失的情况下，重新定位
     if (bReuseMap_)
         orb_state_.state = orb_slam2_ros::ORBState::LOST;
     else
@@ -180,6 +186,7 @@ ROSPublisher::ROSPublisher(Map *map, double frequency, bool bReuseMap_, ros::Nod
 
     // initialize parameters
     // 从ROS参数服务器中获取一些参数值，包括 OctoMap 是否启用、投影最小高度、梯度图的一些参数等
+    // 这里从 ROS 参数服务器中获取一些参数值，并初始化类的成员变量
     nh.param<bool>("octomap_enabled", octomap_enabled_, true);
     nh.param<double>("occupancy_projection_min_height", projection_min_height_, ROSPublisher::PROJECTION_MIN_HEIGHT);
     nh.param<float>("occupancy_gradient_max_height", gradient_max_height_, ROSPublisher::GRADIENT_MAX_HEIGHT);
@@ -188,10 +195,12 @@ ROSPublisher::ROSPublisher(Map *map, double frequency, bool bReuseMap_, ros::Nod
     nh.param<float>("occupancy_gradient_high_slope", gradient_high_slope_, ROSPublisher::GRADIENT_HIGH_SLOPE);
 
     // 初始化相机位置
+    // 初始化 camera_position_old 变量为 {0.0, 0.0, 0.0}
     camera_position_old = {0.0, 0.0, 0.0};
 
     // initialize publishers
     // map includes all keypoint extracted during the slam prozes
+    // 这里初始化 ROS 发布者对象，用于发布不同类型的消息，比如地图数据、里程计数据、图像数据等。
     map_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("map", 3);
     map_updates_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("map_updates", 3);
 
@@ -204,9 +213,10 @@ ROSPublisher::ROSPublisher(Map *map, double frequency, bool bReuseMap_, ros::Nod
     state_desc_pub_ = nh_.advertise<std_msgs::String>("state_description", 10);
 
     // 初始化 OctoMap 相关的发布者和开启 OctoMap 工作线程
+    // 这个条件判断语句用于检查是否启用 OctoMap。如果启用了 OctoMap，那么初始化 OctoMap 相关的发布者和开启 OctoMap 工作线程
     if (octomap_enabled_)
     {
-        cout << "Octomap enabled" << endl;
+        cout << colouredString("Octomap enabled",GREEN,REGULAR) << endl;
         octomap_pub_ = nh_.advertise<octomap_msgs::Octomap>("octomap", 3);
         projected_map_pub_ = nh.advertise<nav_msgs::OccupancyGrid>("projected_map", 5, 10);
         gradient_map_pub_ = nh.advertise<nav_msgs::OccupancyGrid>("gradient_map", 5, 10);
@@ -255,6 +265,7 @@ void ROSPublisher::stashMapPoints(bool all_map_points)
 /*
  * Octomap worker thread function, which has exclusive access to the octomap. Updates and publishes it.
  */
+//TODO: 该函数是一个线程函数，用于更新和发布 OctoMap。在该函数中，首先等待 ORB_SLAM2 系统启动完成，然后进入主循环，该循环在线程未停止的情况下一直执行。
 void ROSPublisher::octomapWorker()
 {
     // 记录当前线程循环时间的时间点
@@ -274,6 +285,7 @@ void ROSPublisher::octomapWorker()
     // 进入主循环，该循环在线程未停止的情况下一直执行
     while (!isStopped())
     {
+        // 获取当前时间，用于计算循环执行的时间
         this_cycle_time = std::chrono::system_clock::now();
 
         // camera_position_ is computed in publishCameraPose() (void ROSPublisher::Run()
@@ -281,17 +293,23 @@ void ROSPublisher::octomapWorker()
 
         origin = {camera_position_.x(), camera_position_.y(), camera_position_.z()};
 
+        // 这是一个异常处理块，尝试获取相机的变换信息
         try
         {
             tf::StampedTransform transform_in_target_frame;
-            tf_listener_.lookupTransform(ROSPublisher::DEFAULT_BASE_FRAME, ROSPublisher::DEFAULT_CAMERA_FRAME, ros::Time(0), transform_in_target_frame);
+            // 如果成功获取到变换信息，则将变换信息转换为 OctoMap 的帧表示
+            // 在ROS中，时间戳的值是以秒为单位的浮点数，表示自 1970 年 1 月 1 日 00:00:00 以来的秒数。因此，ros::Time(0) 表示的是 1970 年 1 月 1 日的时间戳。
+            // ros::Time()：这个构造函数没有参数，它会创建一个时间戳对象，其时间值为当前的系统时间。如果你调用了 ros::Time() 构造函数，就相当于获取了当前的系统时间戳。
+            tf_listener_.lookupTransform(ROSPublisher::DEFAULT_BASE_FRAME, ROSPublisher::DEFAULT_CAMERA_FRAME, ros::Time(), transform_in_target_frame);
             frame = octomap::poseTfToOctomap(transform_in_target_frame);
             got_tf = true;
+            cout << colouredString("Got camera TF",GREEN,REGULAR) << endl;
         }
         catch (tf::TransformException &ex)
         {
             frame = octomap::pose6d(0, 0, 0, 0, 0, 0);
             got_tf = false;
+            cout << colouredString("No camera TF",RED,REGULAR) << endl;
         }
 
         if (got_tf || ROSPublisher::OCTOMAP_REBUILD)
@@ -739,7 +757,7 @@ void ROSPublisher::publishOctomap()
     }
 
     // write out the octomap to folder orbslam2_ws/devel/lib/orb_slam2_ros for debugging purpose
-    // octomap_.write("my_octomap.ot");
+    octomap_.write("../../../maps/octomap.ot");
 }
 
 /*
@@ -832,20 +850,20 @@ void ROSPublisher::Run()
     using namespace std::chrono;
 
     SetFinish(false);
-
-    ROS_INFO("ROS publisher started");
-
     while (WaitCycleStart())
     {
+        // NOTE cout << colouredString("ROS publisher started", GREEN, BOLD) << endl;
         // only publish map, map updates and camera pose, if camera pose was updated
         if (isCamUpdated())
         {
+            // NOTE cout << colouredString("Camera pose updated", GREEN, BOLD) << endl;
             publishMap();
             publishMapUpdates();
             publishCameraPose();
 
             if (octomap_enabled_)
             {
+                // NOTE cout << colouredString("Octomap enabled", GREEN, BOLD) << endl;
                 stashMapPoints(); // store current reference map points for the octomap worker
             }
         }

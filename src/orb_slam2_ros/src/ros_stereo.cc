@@ -146,7 +146,7 @@ int main(int argc, char **argv)
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
     const double freq = 100.0;
     // Set up a namespace for topics
-    ros::NodeHandle nh("/orb_slam2");
+    ros::NodeHandle nh("/orbslamex");
     ORB_SLAM2::System SLAM(make_unique<ROSSystemBuilder>(argv[1], argv[2], ORB_SLAM2::System::STEREO, freq, nh));
     ImageGrabber igb(&SLAM);
 
@@ -229,7 +229,6 @@ int main(int argc, char **argv)
     if (bFileName)
     {
         file_name = string(argv[argc - 1]);
-        cout << "file name: " << file_name << endl;
         // Save camera trajectory
         const string kf_file = "kf_" + string(argv[argc - 1]) + ".txt";
         const string f_file = "f_" + string(argv[argc - 1]) + ".txt";

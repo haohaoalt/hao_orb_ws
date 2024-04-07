@@ -1,10 +1,10 @@
 My ORB WorkSpace
 
-# tensorRT branch
+# orbslamex branch
 
 ## 01 build and install
 ```
-git checkout tensorrt
+git checkout orbslamex
 ROS noetic
 sudo apt-get install libeigen3-dev
 cp -rf /usr/include/eigen3/Eigen /usr/include/Eigen -R 
