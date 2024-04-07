@@ -22,7 +22,7 @@
 #include "LoopClosing.h"
 #include "ORBmatcher.h"
 #include "Optimizer.h"
-
+#include "colorutils.h"
 #include<mutex>
 
 #include <unistd.h>
@@ -569,7 +569,7 @@ bool LocalMapping::Stop()
     if(mbStopRequested && !mbNotStop)
     {
         mbStopped = true;
-        cout << "Local Mapping STOP" << endl;
+        cout << colouredString("Local Mapping STOP", YELLOW,REGULAR) << endl;
         return true;
     }
 
@@ -599,8 +599,7 @@ void LocalMapping::Release()
     for(list<KeyFrame*>::iterator lit = mlNewKeyFrames.begin(), lend=mlNewKeyFrames.end(); lit!=lend; lit++)
         delete *lit;
     mlNewKeyFrames.clear();
-
-    cout << "Local Mapping RELEASE" << endl;
+    cout << colouredString("Local Mapping RELEASE", YELLOW,REGULAR) << endl;
 }
 
 bool LocalMapping::AcceptKeyFrames()

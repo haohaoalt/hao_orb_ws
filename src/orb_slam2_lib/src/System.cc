@@ -211,8 +211,7 @@ namespace ORB_SLAM2
         bUseSavedMap = mpBuilder->GetMapReuseOption();
 
         // Load ORB Vocabulary
-        cout << endl
-             << "Loading ORB Vocabulary. This could take a while..." << endl;
+        cout << colouredString("Loading ORB Vocabulary...", GREEN, REGULAR) << endl;
         // 建立一个新的ORB字典
         mpVocabulary = mpBuilder->GetVocabulary();
 

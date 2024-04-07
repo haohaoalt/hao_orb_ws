@@ -40,6 +40,8 @@
 //in order to handle large maps
 #include <sys/resource.h>
 
+#include "colorutils.h"
+
 //used to measure running time of SLAM system
 #include <time.h>
 
@@ -154,9 +156,9 @@ int main(int argc, char **argv)
     stringstream ss(argv[3]);
     //When the boolalpha format flag is set, bool values are inserted/extracted by their textual representation: either true or false, instead of integral values.
 	ss >> boolalpha >> igb.do_rectify;
-    cout << " igb.do_rectify" << endl;
     if(igb.do_rectify)
     {
+        cout << colouredString("igb.do_rectify: ", BLUE, REGULAR) << igb.do_rectify << endl;
         // Load settings related to stereo calibration
         cv::FileStorage fsSettings(argv[2], cv::FileStorage::READ);
         if(!fsSettings.isOpened())

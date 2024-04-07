@@ -303,7 +303,7 @@ void ROSPublisher::octomapWorker()
             tf_listener_.lookupTransform(ROSPublisher::DEFAULT_BASE_FRAME, ROSPublisher::DEFAULT_CAMERA_FRAME, ros::Time(), transform_in_target_frame);
             frame = octomap::poseTfToOctomap(transform_in_target_frame);
             got_tf = true;
-            cout << colouredString("Got camera TF",GREEN,REGULAR) << endl;
+            // cout << colouredString("Got camera TF",GREEN,REGULAR) << endl;
         }
         catch (tf::TransformException &ex)
         {
@@ -339,7 +339,8 @@ void ROSPublisher::octomapWorker()
             publishProjectedMap();
             publishGradientMap();
 
-            ROS_INFO("octomapWorker thread: finished cycle integrating %i pointcloud chunks.", pointcloud_chunks_stashed);
+            // ROSINFO 输出日志信息表示本次周期中集成的点云数据块的数量
+            // ROS_INFO("octomapWorker thread: finished cycle integrating %i pointcloud chunks.", pointcloud_chunks_stashed);
         }
         else
         {
@@ -719,7 +720,7 @@ void ROSPublisher::publishOdom(tf::Quaternion orientation)
 
     // interval from which we get the velocity
     ros::Duration interval(0.1);
-    ros::Time time = ros::Time(0);
+    ros::Time time = ros::Time();
     try
     {
         transformer.lookupTwist("/base_link", "/odom", time, interval, twist);
@@ -757,6 +758,7 @@ void ROSPublisher::publishOctomap()
     }
 
     // write out the octomap to folder orbslam2_ws/devel/lib/orb_slam2_ros for debugging purpose
+    // TODO publishOctomap
     octomap_.write("../../../maps/octomap.ot");
 }
 
@@ -876,6 +878,7 @@ void ROSPublisher::Run()
     }
 
     ROS_INFO("ROS publisher finished");
+    cout << colouredString("Octomap written to file", GREEN, BOLD) << endl;
     SetFinish(true);
 }
 

@@ -39,7 +39,7 @@
 //for increasing stack size
 //in order to handle large maps
 #include <sys/resource.h>
-
+#include "colorutils.h"
 //used to measure running time of SLAM system
 #include <time.h>
 
@@ -154,9 +154,9 @@ int main(int argc, char **argv)
     stringstream ss(argv[3]);
     //When the boolalpha format flag is set, bool values are inserted/extracted by their textual representation: either true or false, instead of integral values.
 	ss >> boolalpha >> igb.do_rectify;
-    cout << " igb.do_rectify" << endl;
     if(igb.do_rectify)
     {
+        cout << colouredString("igb.do_rectify: ", BLUE, REGULAR) << igb.do_rectify << endl;
         // Load settings related to stereo calibration
         cv::FileStorage fsSettings(argv[2], cv::FileStorage::READ);
         if(!fsSettings.isOpened())
@@ -221,7 +221,7 @@ int main(int argc, char **argv)
 
     // Stop all threads
     SLAM.Shutdown();
-    printf("Time taken between SLAM.Start() and SLAM.Shutdown(): %.2fs\n", (double)(clock() - tStart)/CLOCKS_PER_SEC);
+    cout << colouredString("Time taken between SLAM.Start() and SLAM.Shutdown(): ",BLUE, REGULAR) << (double)(clock() - tStart) / CLOCKS_PER_SEC << "s" << endl;
 
     // Save camera trajectory, you find those files in roborace_ws/devel_isolated/orb_slam2_ros/lib/orb_slam2_ros
     // visualize the trajectories with evo-traj package
