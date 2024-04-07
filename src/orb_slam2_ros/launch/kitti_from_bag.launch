@@ -19,7 +19,7 @@
 <node pkg="orb_slam2_ros" type="Stereo_kitti" name="orb_slam2" args="$(find orb_slam2_lib)/Vocabulary/ORBvoc.bin $(arg orb_settings_file) False $(arg sequence)" cwd="node" output="screen">
   <param name="octomap_enabled" value="$(arg octomap_enabled)"/>
   <!-- needed for projected/gradient map-->
-  <param name="octomap_resolution" value="0.02"/>
+  <param name="octomap_resolution" value="0.2"/>
   <param name="occupancy_projection_min_height" value="-0.1"/>
   <param name="occupancy_gradient_max_height" value="0.2"/>
   <param name="occupancy_gradient_nb_erosions" value="1"/>

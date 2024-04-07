@@ -876,9 +876,7 @@ void ROSPublisher::Run()
             publishState(NULL);
         }
     }
-
     ROS_INFO("ROS publisher finished");
-    cout << colouredString("Octomap written to file", GREEN, BOLD) << endl;
     SetFinish(true);
 }
 
