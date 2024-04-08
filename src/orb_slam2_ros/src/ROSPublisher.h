@@ -41,7 +41,8 @@ public:
     // STEP 成员变量
     static constexpr const char *DEFAULT_MAP_FRAME = "map";
     static constexpr const char *DEFAULT_MAP_FRAME_ADJUSTED = "map_adjusted";
-    static constexpr const char *DEFAULT_CAMERA_FRAME = "orbslamex/camera"; // this is the trajectory guess of the ORB-SLAM2, visualize it in RViz to see trajectory of camera
+    //TODO： camera frame set 
+    static constexpr const char *DEFAULT_CAMERA_FRAME = "orbslamex/frame"; // this is the trajectory guess of the ORB-SLAM2, visualize it in RViz to see trajectory of camera
     static constexpr const char *DEFAULT_BASE_FRAME = "baselink";
     // static constexpr const char *DEFAULT_BASE_FRAME = "rear_axis_middle_ground";
     static constexpr const float DEFAULT_OCTOMAP_RESOLUTION = 0.02; // defines resolution of octomap

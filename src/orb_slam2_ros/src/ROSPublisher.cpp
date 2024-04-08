@@ -85,14 +85,19 @@ Q convertToQuaternion(const cv::Mat &rot)
 // 定义了一个函数 computeCameraTransform，该函数接受一个 cv::Mat 类型的参数 Twc（表示相机到世界坐标系的变换），然后计算并返回相机的变换矩阵
 cv::Mat computeCameraTransform(const cv::Mat &Twc)
 {
+    // 创建一个4x4的单位矩阵，作为初始的相机变换矩阵。该矩阵用于存储相机的位置和姿态信息
     cv::Mat ret = cv::Mat::eye(4, 4, CV_32F);
 
+    // 检查输入的相机变换矩阵是否为空。如果不为空，表示成功获取了相机到世界坐标系的变换信息
     if (!Twc.empty())
     {
         // auto for variables, specifies that the type of the variable that is being declared will be automatically deduced from its initializer
+        // 从相机变换矩阵中提取出旋转部分，并对其进行转置操作，得到相机的旋转矩阵
         auto Rwc = Twc.rowRange(0, 3).colRange(0, 3).t();
+        // 将相机的旋转矩阵赋值给返回的相机变换矩阵 ret 的旋转部分。
         ret.rowRange(0, 3).colRange(0, 3) = Rwc;
         // twc, the position
+        // 计算相机的平移向量，并将其赋值给返回的相机变换矩阵 ret 的平移部分。这里采用了以下计算公式：相机的平移向量 = -相机的旋转矩阵 × 相机到世界坐标系的平移向量。
         ret.rowRange(0, 3).col(3) = -Rwc * Twc.rowRange(0, 3).col(3);
     }
     return ret;
@@ -294,12 +299,17 @@ void ROSPublisher::octomapWorker()
         origin = {camera_position_.x(), camera_position_.y(), camera_position_.z()};
 
         // 这是一个异常处理块，尝试获取相机的变换信息
+        //ex 是异常处理块中定义的变量，用于接收捕获到的异常对象。在异常被捕获时，异常对象将被传递给这个变量，以便在异常处理块中对异常对象进行处理。
+        // 如果tf_listener_成功获取了相机到基准坐标系之间的变换信息，代码将执行try块中的语句。在这里，变换信息将被转换为 OctoMap 的帧表示（即frame变量），以便在后续的处理中使用。此时，got_tf标志将被设置为true，表示成功获取到变换信息。
         try
         {
             tf::StampedTransform transform_in_target_frame;
             // 如果成功获取到变换信息，则将变换信息转换为 OctoMap 的帧表示
+            // 代码使用tf_listener_对象的lookupTransform方法尝试获取相机到基准坐标系之间的变换信息
             // 在ROS中，时间戳的值是以秒为单位的浮点数，表示自 1970 年 1 月 1 日 00:00:00 以来的秒数。因此，ros::Time(0) 表示的是 1970 年 1 月 1 日的时间戳。
             // ros::Time()：这个构造函数没有参数，它会创建一个时间戳对象，其时间值为当前的系统时间。如果你调用了 ros::Time() 构造函数，就相当于获取了当前的系统时间戳。
+            // TODO: 通过tf_listener_对象的lookupTransform方法尝试获取相机到基准坐标系之间的变换信息
+            // NOTE 此处可以捕获对应的错误信息 到 tf::TransformException &ex
             tf_listener_.lookupTransform(ROSPublisher::DEFAULT_BASE_FRAME, ROSPublisher::DEFAULT_CAMERA_FRAME, ros::Time(), transform_in_target_frame);
             frame = octomap::poseTfToOctomap(transform_in_target_frame);
             got_tf = true;
@@ -307,6 +317,7 @@ void ROSPublisher::octomapWorker()
         }
         catch (tf::TransformException &ex)
         {
+            // 如果tf_listener_未能成功获取变换信息，代码将执行catch块中的语句。在这里，frame变量将被设置为默认值（全零的姿态），并将got_tf标志设置为false，表示未获取到变换信息。同时，将输出一条错误消息，指示未能获取到相机的变换信息。
             frame = octomap::pose6d(0, 0, 0, 0, 0, 0);
             got_tf = false;
             cout << colouredString("No camera TF",RED,REGULAR) << endl;
@@ -689,8 +700,8 @@ void ROSPublisher::publishCameraPose()
         // get the stamp of transform and call the function to publish odom
         // pass the quaternion orientation
         // used only with RC car
-        // ros::Time stamp = transform.stamp_;
-        // ROSPublisher::publishOdom(orientation);
+        ros::Time stamp = transform.stamp_;
+        ROSPublisher::publishOdom(orientation);
         ResetCamFlag();
     }
     else
@@ -723,7 +734,7 @@ void ROSPublisher::publishOdom(tf::Quaternion orientation)
     ros::Time time = ros::Time();
     try
     {
-        transformer.lookupTwist("/base_link", "/odom", time, interval, twist);
+        transformer.lookupTwist("/baselink", "/orbslamex/odom", time, interval, twist);
     }
     catch (tf::TransformException ex)
     {

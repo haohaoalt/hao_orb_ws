@@ -1,32 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
 <!-- rosbag arguments -->
-<arg name="sequence" default="A-3fand4f"/>
+<arg name="sequence" default="zed_1f_loop_gnss"/>
 
-<arg name="bag_data_path" default="/home/ubuntu/Dev/dataset/Sensors/carmera/zed2i/$(arg sequence).bag"/>
+<arg name="bag_data_path" default="/media/ylsdb20/Friday/dataset/Sensors/GNSS-IMU/$(arg sequence).bag"/>
 
 
 <!-- ORBSLAM arguments -->
-<arg name="octomap_enabled"         		default="false"/>
+<arg name="octomap_enabled"         		default="true"/>
 
-<!-- feature visualizer arguments -->
-<arg name="visualize_orb_features"          default="true"/>
-
-<arg name="orb_settings_file" default="$(find orb_slam2_ros)/settings/zed2i-1280.yaml"/>
+<arg name="orb_settings_file" default="$(find orb_slam2_ros)/settings/zed2i640.yaml"/>
 
 
 <!-- rosbag replay-->
-<!-- <param name="use_sim_time" value="true"/> -->
+<param name="use_sim_time" value="true"/>
 <!-- 
   从10秒开始播放：rosbag play -s 10 xx.bag 
   仅播放前十秒：rosbag play -u 10 xx.bag
   从120s开始播放，只播放20s，就是播放120s~140s的时间段： rosbag play xx.bag -s 120 -u 20
   -->
-<node pkg="rosbag" type="play" name="player" output="log" args="$(arg bag_data_path) --clock -s 200 --pause -r 1">
-  <!-- <remap from="/zed2i/zed_node/left_raw/image_raw_gray" to="kitti/camera_gray_left/image_raw"/>
-  <remap from="/zed2i/zed_node/right_raw/image_raw_gray" to="kitti/camera_gray_right/image_raw"/> -->
+<node pkg="rosbag" type="play" name="player" output="log" args="$(arg bag_data_path) --clock --pause -r 1">
 </node>
-
 
 <!-- ORBSLAM2 with Ros -->
 <!-- Provide the correct settings .yaml file to specify camera parameters and ORB feature settings -->
@@ -41,7 +35,11 @@
   <param name="occupancy_gradient_high_slope" value="0.5"/>
 </node>
 
+<!-- tf -->
+ <node pkg = "tf" type = "static_transform_publisher" name = "baselink_to_camera" args="0.19 0.0 0.2 0.0 0.0 0.0 baselink /orbslamex/frame 40" />
 <!-- rqt_image_view for visualization of extracted ORB featues in camera frame -->
+<!-- feature visualizer arguments -->
+<arg name="visualize_orb_features"          default="true"/>
 <node pkg="rqt_image_view" type="rqt_image_view" name="rqt_image_view" args="image:=/orb_slam2/frame" if="$(arg visualize_orb_features)" output="screen"/>
 
 </launch>
