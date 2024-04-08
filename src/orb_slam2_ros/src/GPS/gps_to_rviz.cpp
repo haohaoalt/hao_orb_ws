@@ -7,6 +7,33 @@
 #include <iostream>
 #include <boost/filesystem.hpp>
 #include "colorutils.h"
+//经纬度转换
+#include <string>
+#include <cmath>
+
+// 将度转换为度分秒
+std::string degreesToDMS(double degrees)
+{
+    int deg = static_cast<int>(degrees);
+    double minutes = (degrees - deg) * 60;
+    int min = static_cast<int>(minutes);
+    double seconds = (minutes - min) * 60;
+    int sec = static_cast<int>(seconds);
+
+    // 使用整数部分表示度，分钟和秒的整数部分，以及秒的小数部分
+    return std::to_string(deg) + std::to_string(min) + std::to_string(sec);
+}
+
+// 生成地图名
+std::string generateMapName(double latitude, double longitude)
+{
+    std::string lat_dms = degreesToDMS(latitude);
+    std::string lon_dms = degreesToDMS(longitude);
+
+    // 根据经纬度的度分秒值生成地图名
+    return "N" + lat_dms + "E" + lon_dms;
+}
+
 struct my_pose
 {
     double latitude;
@@ -37,6 +64,11 @@ void gpsCallback(const sensor_msgs::NavSatFixConstPtr &gps_msg_ptr)
     }
     else
     {
+        ROS_INFO("\033[1;32m( ORIGN gps x:%0.6f ,y:%0.6f ,z:%0.6f)\033[0m", gps_msg_ptr->latitude, gps_msg_ptr->longitude, gps_msg_ptr->altitude);
+        double mutilatitude = gps_msg_ptr->latitude;
+        double mutilongitude = gps_msg_ptr->longitude;
+        std::string map_name = generateMapName(mutilatitude, mutilongitude);
+        ROS_INFO("Generated map name: %s", map_name.c_str());
         // 计算相对位置
         double radLat1, radLat2, radLong1, radLong2, delta_lat, delta_long, x, y;
         radLat1 = rad(init_pose.latitude);
@@ -80,7 +112,7 @@ void gpsCallback(const sensor_msgs::NavSatFixConstPtr &gps_msg_ptr)
 
         ros_path_.poses.push_back(pose);
 
-        ROS_INFO("\033[1;32m( gps path x:%0.6f ,y:%0.6f ,z:%0.6f)\033[0m", x, y, z);
+        // ROS_INFO("\033[1;32m( gps path x:%0.6f ,y:%0.6f ,z:%0.6f)\033[0m", x, y, z);
 
         state_pub_.publish(ros_path_);
     }

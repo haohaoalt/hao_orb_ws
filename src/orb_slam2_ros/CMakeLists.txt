@@ -44,6 +44,7 @@ add_message_files(
   DIRECTORY msg
   FILES
   ORBState.msg
+  mutimap.msg
 )
 
 generate_messages(
