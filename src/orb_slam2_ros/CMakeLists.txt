@@ -50,11 +50,14 @@ generate_messages(
   DEPENDENCIES
   std_msgs
 )
+# 查找 Boost 库
+find_package(Boost REQUIRED COMPONENTS filesystem)
 
 catkin_package(CATKIN_DEPENDS message_runtime std_msgs)
 
 include_directories(
   ${roscpp_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIRS}
   ${Pangolin_INCLUDE_DIRS}
   ${PROJECT_SOURCE_DIR}
   ${PROJECT_SOURCE_DIR}/include
@@ -119,6 +122,7 @@ target_link_libraries(RGBD
 
 # Node for GPS path
  add_executable(gps_to_rviz src/GPS/gps_to_rviz.cpp)
- target_link_libraries(gps_to_rviz     ${catkin_LIBRARIES} )
+add_dependencies(gps_to_rviz ${${PROJECT_NAME}_EXPORTED_TARGETS})
+ target_link_libraries(gps_to_rviz  ${LIBS} ${Boost_LIBRARIES})
 
 
