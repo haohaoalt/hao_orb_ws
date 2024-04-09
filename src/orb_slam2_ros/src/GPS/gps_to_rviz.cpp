@@ -5,11 +5,30 @@
 #include <nav_msgs/Path.h>
 #include <math.h>
 #include <iostream>
+#include <vector>
+#include <dirent.h>
 #include <boost/filesystem.hpp>
 #include "colorutils.h"
 //经纬度转换
 #include <string>
 #include <cmath>
+#include <orb_slam2_ros/mutimap.h>
+
+// 全局变量
+static double EARTH_RADIUS = 6378.137; // 地球半径
+ros::Publisher state_pub_;
+nav_msgs::Path ros_path_;
+bool init;
+struct my_pose
+{
+    double latitude;
+    double longitude;
+    double altitude;
+};
+my_pose init_pose;
+// 声明一个全局的 mutimap_publisher
+ros::Publisher mapstatepub;
+
 
 // 将度转换为度分秒
 std::string degreesToDMS(double degrees)
@@ -24,7 +43,7 @@ std::string degreesToDMS(double degrees)
     return std::to_string(deg) + std::to_string(min) + std::to_string(sec);
 }
 
-// 生成地图名
+//生成地图名
 std::string generateMapName(double latitude, double longitude)
 {
     std::string lat_dms = degreesToDMS(latitude);
@@ -33,25 +52,45 @@ std::string generateMapName(double latitude, double longitude)
     // 根据经纬度的度分秒值生成地图名
     return "N" + lat_dms + "E" + lon_dms;
 }
-
-struct my_pose
+// Function to generate map names from filenames
+std::string LoadMapName(const std::string &filename)
 {
-    double latitude;
-    double longitude;
-    double altitude;
-};
+    // Extract necessary parts from the filename and construct the map name
+    // This part depends on your filename format
+    return filename;
+}
+
 // 角度制转弧度制
 double rad(double d)
 {
     return d * 3.1415926 / 180.0;
 }
-// 全局变量
-static double EARTH_RADIUS = 6378.137; // 地球半径
-ros::Publisher state_pub_;
-nav_msgs::Path ros_path_;
-bool init;
-my_pose init_pose;
 
+
+// Function to get all filenames in a directory
+std::vector<std::string> getFilenames(const std::string &directory)
+{
+    std::vector<std::string> filenames;
+    DIR *dir;
+    struct dirent *ent;
+    if ((dir = opendir(directory.c_str())) != NULL)
+    {
+        while ((ent = readdir(dir)) != NULL)
+        {
+            // Exclude directories and hidden files
+            if (ent->d_type == DT_REG && ent->d_name[0] != '.')
+            {
+                filenames.push_back(ent->d_name);
+            }
+        }
+        closedir(dir);
+    }
+    else
+    {
+        std::cerr << "Error opening directory: " << directory << std::endl;
+    }
+    return filenames;
+}
 void gpsCallback(const sensor_msgs::NavSatFixConstPtr &gps_msg_ptr)
 {
     // 初始化
@@ -116,13 +155,29 @@ void gpsCallback(const sensor_msgs::NavSatFixConstPtr &gps_msg_ptr)
 
         state_pub_.publish(ros_path_);
     }
+    // 创建并填充 mutimap 消息对象
+    orb_slam2_ros::mutimap mutimap_msg;
+    // 填充 mutimap_msg 的字段
+    // 假设您有一组要添加到消息中的字符串
+    // Specify the directory path
+    std::string directory = "/home/ylsdb20/dev/hao_orb_ws/maps";
+    // Get all filenames in the directory
+    std::vector<std::string> filenames = getFilenames(directory);
+
+    for (const auto &filename : filenames)
+    {
+        mutimap_msg.data.push_back(LoadMapName(filename));
+    }
+    // 发布 mutimap 消息
+    mapstatepub.publish(mutimap_msg);
+    mutimap_msg.data.clear();
 }
 
 // TODO save TUM TRAJECTORY
 void saveTrajectoryTUM(const nav_msgs::Path::ConstPtr &path, const std::string &filename)
 {
     // Construc the full path to the map file
-    boost::filesystem::path maps_directory = "/home/ylsdb20/dev/hao_orb_ws/maps";
+    boost::filesystem::path maps_directory = "/home/ylsdb20/dev/hao_orb_ws/results";
     // // 构造完整的文件路径 绝对路径
     boost::filesystem::path full_path = boost::filesystem::absolute(maps_directory) / filename;
     // std::cout << "full_path: " << full_path << std::endl;
@@ -164,6 +219,8 @@ int main(int argc, char **argv)
     init = false;
     ros::init(argc, argv, "gps_to_rviz");
     ros::NodeHandle n;
+    //周期发布 msg 消息
+    mapstatepub = n.advertise<orb_slam2_ros::mutimap>("mapstate", 10);
     ros::Subscriber pose_sub = n.subscribe("/gps/fix", 20, gpsCallback);
 
     state_pub_ = n.advertise<nav_msgs::Path>("gps_path", 20);
