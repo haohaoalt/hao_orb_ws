@@ -2,3 +2,5 @@
 **/devel/*
 .vscode/*
 maps/*
+results/*.bin
+results/*.ot

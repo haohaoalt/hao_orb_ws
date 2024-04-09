@@ -128,7 +128,7 @@ namespace ORB_SLAM2
         // Max/Min Frames to insert keyframes and to check relocalization
         mMinFrames = 0;
         mMaxFrames = fps;
-
+        cout << colouredString("Tracking Constructor", GREEN, BOLD) << endl;
         cout << endl
              << "Camera Parameters: " << endl;
         cout << "- fx: " << fx << endl;
@@ -189,7 +189,7 @@ namespace ORB_SLAM2
             // ThDepth其实就是表示基线长度的多少倍
             mThDepth = mbf * (float)fSettings["ThDepth"] / fx;
             cout << endl
-                 << "Depth Threshold (Close/Far Points): " << mThDepth << endl;
+                 << "IF STEREO OR RGBD Depth Threshold (Close/Far Points): " << mThDepth << endl;
         }
 
         if (sensor == System::RGBD)
@@ -724,7 +724,6 @@ namespace ORB_SLAM2
     //NOTE 双目初始化
     void Tracking::StereoInitialization()
     {
-        cout << "" << endl;
         cout << colouredString("Stereo and RGBD init in StereoInitialization", GREEN, REGULAR) << endl;
         if (mCurrentFrame.N > 500)
         {
@@ -756,7 +755,7 @@ namespace ORB_SLAM2
                 }
             }
 
-            cout << colouredString("StereoInitialization New map created with ", GREEN, REGULAR) << mpMap->MapPointsInMap() << " points" << endl;
+            cout << colouredString("Stereo Initialization New map created with ", GREEN, REGULAR) << mpMap->MapPointsInMap() << " points" << endl;
 
             mpLocalMapper->InsertKeyFrame(pKFini);
 

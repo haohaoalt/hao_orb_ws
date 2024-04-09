@@ -1,5 +1,8 @@
 <launch>
     <node name="gps_to_rviz" pkg="orb_slam2_ros" type="gps_to_rviz" output="screen" />
-    <node pkg="rosbag" type="play" name="play" args="--clock /media/ylsdb20/Friday/dataset/Sensors/GNSS-IMU/gins.bag"/>
+
+    <!-- rosbag replay-->
+    <param name="use_sim_time" value="true"/>
+    <node pkg="rosbag" type="play" name="play" output="log" args="--clock -u 10 /media/ylsdb20/Friday/dataset/Sensors/GNSS-IMU/gins.bag"/>
     <!-- <node pkg="rviz" type="rviz" name="rviz" output="screen" args="-d $(find orb_slam2_ros)/rviz/gps_path.rviz" required="true"/> -->
 </launch>

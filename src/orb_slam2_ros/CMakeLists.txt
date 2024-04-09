@@ -92,7 +92,19 @@ target_link_libraries(Stereo
   ${LIBS}
 )
 
-# Node for stereo camera
+# Node for stereo and gnss camera
+add_executable(Stereo_gnss
+  src/ros_stereoAndgnss.cc
+  src/ROSPublisher.cpp
+)
+
+add_dependencies(Stereo_gnss ${${PROJECT_NAME}_EXPORTED_TARGETS})
+
+target_link_libraries(Stereo_gnss
+  ${LIBS}
+)
+
+# Node for stereo kitti camera
 add_executable(Stereo_kitti
   src/ros_stereo_kitti.cc
   src/ROSPublisher.cpp

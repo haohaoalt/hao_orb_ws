@@ -20,21 +20,21 @@ def parse_trajectory_file(file_path):
 
     return timestamps, positions, orientations
 
-def plot_trajectory(ax, positions, view):
+def plot_trajectory(ax, positions, view, trajectory_name):
     x = [pos[0] for pos in positions]
     y = [pos[1] for pos in positions]
     z = [pos[2] for pos in positions]
 
     if view == 'xz':
-        ax.plot(x, z)
+        ax.plot(x, z, label=trajectory_name)  # 添加轨迹名称为线上注释
         ax.set_xlabel('X')
         ax.set_ylabel('Z')
     elif view == 'xy':
-        ax.plot(x, y)
+        ax.plot(x, y, label=trajectory_name)  # 添加轨迹名称为线上注释
         ax.set_xlabel('X')
         ax.set_ylabel('Y')
     elif view == 'xyz':
-        ax.plot(x, y, z)
+        ax.plot(x, y, z, label=trajectory_name)  # 添加轨迹名称为线上注释
         ax.set_xlabel('X')
         ax.set_ylabel('Y')
         ax.set_zlabel('Z')
@@ -63,9 +63,14 @@ if __name__ == "__main__":
     for i in range(1, len(sys.argv)):
         file_path = sys.argv[i]
         timestamps, positions, orientations = parse_trajectory_file(file_path)
-        plot_trajectory(ax_xyz, positions, 'xyz')
-        plot_trajectory(ax_xz, positions, 'xz')
-        plot_trajectory(ax_xy, positions, 'xy')
+        plot_trajectory(ax_xyz, positions, 'xyz', file_path)
+        plot_trajectory(ax_xz, positions, 'xz', file_path)
+        plot_trajectory(ax_xy, positions, 'xy', file_path)
+
+    # 添加图例
+    ax_xyz.legend()
+    ax_xz.legend()
+    ax_xy.legend()
 
     plt.tight_layout()
     plt.show()

@@ -100,8 +100,15 @@ void gpsCallback(const sensor_msgs::NavSatFixConstPtr &gps_msg_ptr)
     // 假设您有一组要添加到消息中的字符串
     // Specify the directory path
     std::string directory = "/home/ylsdb20/dev/hao_orb_ws/maps";
+
+    std::string map_name = generateMapName(gps_msg_ptr->latitude, gps_msg_ptr->longitude);
+    //ROSINFO generateMapName
+    // ROS_INFO("Generated map name: %s", map_name.c_str());
+    mutimap_msg.mapfile = map_name;
+
     // Get all filenames in the directory
-    std::vector<std::string> filenames = getFilenames(directory);
+    std::vector<std::string>
+        filenames = getFilenames(directory);
 
     for (const auto &filename : filenames)
     {
@@ -112,6 +119,8 @@ void gpsCallback(const sensor_msgs::NavSatFixConstPtr &gps_msg_ptr)
 
     // STEP2 处理 gps 数据
     //  初始化
+    // ROSINFO 原始 gps 数据
+    // ROS_INFO("\033[1;32m( ORIGN gps x:%0.6f ,y:%0.6f ,z:%0.6f)\033[0m", gps_msg_ptr->latitude, gps_msg_ptr->longitude, gps_msg_ptr->altitude);
     if (!init)
     {
         init_pose.latitude = gps_msg_ptr->latitude;
@@ -121,11 +130,8 @@ void gpsCallback(const sensor_msgs::NavSatFixConstPtr &gps_msg_ptr)
     }
     else
     {
-        ROS_INFO("\033[1;32m( ORIGN gps x:%0.6f ,y:%0.6f ,z:%0.6f)\033[0m", gps_msg_ptr->latitude, gps_msg_ptr->longitude, gps_msg_ptr->altitude);
         double mutilatitude = gps_msg_ptr->latitude;
         double mutilongitude = gps_msg_ptr->longitude;
-        std::string map_name = generateMapName(mutilatitude, mutilongitude);
-        ROS_INFO("Generated map name: %s", map_name.c_str());
         // 计算相对位置
         double radLat1, radLat2, radLong1, radLong2, delta_lat, delta_long, x, y;
         radLat1 = rad(init_pose.latitude);
@@ -174,8 +180,8 @@ void gpsCallback(const sensor_msgs::NavSatFixConstPtr &gps_msg_ptr)
         state_pub_.publish(ros_path_);
     }
 
-    //STEP4 清空 mutimap_msg
-    // 清空 mutimap_msg
+    // STEP4 清空 mutimap_msg
+    //  清空 mutimap_msg
     mutimap_msg.data.clear();
 }
 
@@ -226,14 +232,18 @@ int main(int argc, char **argv)
     init = false;
     ros::init(argc, argv, "gps_to_rviz");
     ros::NodeHandle n;
-    // 周期发布 msg 消息
+    // 周期发布 msg 消息 有多于10个消息待发送，新的消息将会被丢弃，直到有空间可用
     mapstatepub = n.advertise<orb_slam2_ros::mutimap>("mapstate", 10);
+    ROS_INFO("Created map state publisher with topic: %s", mapstatepub.getTopic().c_str());
     ros::Subscriber pose_sub = n.subscribe("/gps/fix", 20, gpsCallback);
-
     state_pub_ = n.advertise<nav_msgs::Path>("gps_path", 20);
     ros::Subscriber sub = n.subscribe<nav_msgs::Path>("gps_path", 1, [&](const nav_msgs::Path::ConstPtr &msg)
                                                       { saveTrajectoryTUM(msg, "gpstrajectory.txt"); });
-    std::cout << colouredString("GPS tum trajectory saved to gpstrajectory.txt", GREEN, BOLD) << std::endl;
+    // NOTE 在调用 ros::spin() 之前，ROS节点还没有开始处理ROS消息，因此 ros::Time::now() 返回的时间可能为0。
+    // ros::spin() 是一个阻塞式函数，它会使节点进入循环等待ROS消息的到来
+    // 只有当按下Ctrl+C时，节点才会退出循环，从而终止程序运行
     ros::spin();
+
+    std::cout << colouredString("GPS tum trajectory saved to gpstrajectory.txt", GREEN, BOLD) << std::endl;
     return 0;
 }

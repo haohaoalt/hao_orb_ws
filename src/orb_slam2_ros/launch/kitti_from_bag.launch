@@ -27,11 +27,6 @@
   <param name="occupancy_gradient_high_slope" value="0.5"/>
 </node>
 
-<!-- feature visualizer arguments -->
-<!-- rqt_image_view for visualization of extracted ORB featues in camera frame -->
-<!-- <arg name="visualize_orb_features" default="true"/>
-<node pkg="rqt_image_view" type="rqt_image_view" name="rqt_image_view" args="image:=/orbslamex/frame" if="$(arg visualize_orb_features)"/> -->
-
 <!-- tf -->
  <node pkg = "tf" type = "static_transform_publisher" name = "baselink_to_camera" args="0.19 0.0 0.2 0.0 0.0 0.0 baselink /orbslamex/camera 40" />
 

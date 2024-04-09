@@ -188,11 +188,13 @@ ROSPublisher::ROSPublisher(Map *map, double frequency, bool bReuseMap_, ros::Nod
         orb_state_.state = orb_slam2_ros::ORBState::LOST;
     else
         orb_state_.state = orb_slam2_ros::ORBState::UNKNOWN;
-
+    cout << colouredString("I'm in ROSPublisher constructor",GREEN,BOLD) << endl;
     // initialize parameters
     // 从ROS参数服务器中获取一些参数值，包括 OctoMap 是否启用、投影最小高度、梯度图的一些参数等
     // 这里从 ROS 参数服务器中获取一些参数值，并初始化类的成员变量
-    nh.param<bool>("octomap_enabled", octomap_enabled_, true);
+    // Declare a boolean variable to store the value of octomap_enabled parameter
+    bool octomap_enabled;
+    nh.param<bool>("octomap_enabled_", octomap_enabled_, false);
     nh.param<double>("occupancy_projection_min_height", projection_min_height_, ROSPublisher::PROJECTION_MIN_HEIGHT);
     nh.param<float>("occupancy_gradient_max_height", gradient_max_height_, ROSPublisher::GRADIENT_MAX_HEIGHT);
     nh.param<int>("occupancy_gradient_nb_erosions", gradient_nb_erosions_, ROSPublisher::GRADIENT_NB_EROSIONS);
@@ -219,9 +221,10 @@ ROSPublisher::ROSPublisher(Map *map, double frequency, bool bReuseMap_, ros::Nod
 
     // 初始化 OctoMap 相关的发布者和开启 OctoMap 工作线程
     // 这个条件判断语句用于检查是否启用 OctoMap。如果启用了 OctoMap，那么初始化 OctoMap 相关的发布者和开启 OctoMap 工作线程
+    cout << colouredString("Octomap enabled: ", RED, BOLD) << octomap_enabled_ << endl;
     if (octomap_enabled_)
     {
-        cout << colouredString("Octomap enabled",GREEN,REGULAR) << endl;
+        cout << colouredString("=================Octomap enabled==================",GREEN,REGULAR) << endl;
         octomap_pub_ = nh_.advertise<octomap_msgs::Octomap>("octomap", 3);
         projected_map_pub_ = nh.advertise<nav_msgs::OccupancyGrid>("projected_map", 5, 10);
         gradient_map_pub_ = nh.advertise<nav_msgs::OccupancyGrid>("gradient_map", 5, 10);
@@ -294,7 +297,7 @@ void ROSPublisher::octomapWorker()
         this_cycle_time = std::chrono::system_clock::now();
 
         // camera_position_ is computed in publishCameraPose() (void ROSPublisher::Run()
-        // cv::Mat xf = computeCameraTransform(GetCameraPose())
+        cv::Mat xf = computeCameraTransform(GetCameraPose());
 
         origin = {camera_position_.x(), camera_position_.y(), camera_position_.z()};
 
@@ -709,40 +712,94 @@ void ROSPublisher::publishCameraPose()
 }
 
 // Added Odom publisher. Get the information from TF
+// NOTE 这段代码实现了一个ROS节点中的ROSPublisher类中的publishOdom方法，用于发布里程计（odometry）信息。以下是对代码的详细解释
 void ROSPublisher::publishOdom(tf::Quaternion orientation)
 {
 
+    // 创建了一个里程计消息对象 odom，用于存储里程计信息
     nav_msgs::Odometry odom;
+    // 设置里程计消息的时间戳，通常设置为当前时间戳或者从其他消息中获取的时间戳。
     odom.header.stamp = stamp;
+    // 设置里程计消息的坐标系，通常设置为地图坐标系
     odom.header.frame_id = ROSPublisher::DEFAULT_MAP_FRAME;
+    //-------------------------------------------------------------------------------------
+    //TODO 坐标系变换
+    // // 定义了四元数变量，用于存储相机的原始方向、旋转后的方向和新的方向
+    // tf::Quaternion q_orig, q_rot, q_new;
+    // // rotation pitch -90° with quaternion, because orbslam2 drives forward in z-direction (optical coordinate system)
+    // // 创建一个旋转四元数，将相机的方向从相机坐标系（光学坐标系）转换为机器人坐标系（baselink坐标系），通常将相机朝向转换为机器人前进方向。
+    // q_rot = tf::createQuaternionFromRPY(0, -M_PI / 2, 0);
+    // // 将相机的位置和方向转换为里程计消息中的位姿信息
 
-    tf::Quaternion q_orig, q_rot, q_new;
-    // rotation pitch -90° with quaternion, because orbslam2 drives forward in z-direction (optical coordinate system)
-    q_rot = tf::createQuaternionFromRPY(0, -M_PI / 2, 0);
-    tf::poseTFToMsg(tf::Transform(orientation, camera_position_), odom.pose.pose);
-    q_orig = orientation;
+    // // tf::poseTFToMsg函数的作用就是将tf::Transform类型的坐标变换转换为geometry_msgs::Pose类型的消息，这样就可以发布到ROS系统中。
+    // tf::poseTFToMsg(tf::Transform(orientation, camera_position_), odom.pose.pose);
+    // // 将传入的相机方向存储到 q_orig 中。
+    // q_orig = orientation;
+    // // 将旋转后的方向和原始方向相乘，得到新的方向
+    // q_new = q_rot * q_orig;
+    // // 对新的方向进行归一化处理。
+    // q_new.normalize();
+    // // 将新的方向转换为里程计消息中的四元数，并存储到 odom.pose.pose.orientation 中
+    // quaternionTFToMsg(q_new, odom.pose.pose.orientation);
+    //-------------------------------------------------------------------------------------
 
-    q_new = q_rot * q_orig;
-    q_new.normalize();
-    quaternionTFToMsg(q_new, odom.pose.pose.orientation);
+    tf::Transform orb_slam_transform;
 
-    // velocity
-    geometry_msgs::Twist twist;
+    // 设置平移部分
+    orb_slam_transform.setOrigin(tf::Vector3(camera_position_.z(), -camera_position_.x(), -camera_position_.y()));
+
+    // 设置旋转部分
+    // 注意：如果你的orientation已经是tf::Quaternion类型，直接使用orientation即可
+    tf::Quaternion adjusted_orientation(orientation.getZ(), -orientation.getX(), -orientation.getY(), orientation.getW());
+    orb_slam_transform.setRotation(adjusted_orientation);
+    tf::poseTFToMsg(orb_slam_transform, odom.pose.pose);
+
+    // 设置里程计消息的线速度和角速度为零
+    // TODO 该函数用于获取里程计信息中的速度信息，并存储到 twist 中。
+    //  velocity
+    // 存储线速度和角速度信息
+    // geometry_msgs::Twist twist;
 
     // interval from which we get the velocity
-    ros::Duration interval(0.1);
-    ros::Time time = ros::Time();
-    try
-    {
-        transformer.lookupTwist("/baselink", "/orbslamex/odom", time, interval, twist);
-    }
-    catch (tf::TransformException ex)
-    {
-        ROS_ERROR("transfrom exception : %s", ex.what());
-    }
-
-    odom.twist.twist = twist;
+    // 设置获取速度信息的时间间隔
+    // ros::Duration interval(0.1);
+    // ros::Time time = ros::Time();
+    // try
+    // {
+    //     // 从TF树中获取基坐标系到里程计坐标系之间的速度信息，并存储到 twist 中
+    //     transformer.lookupTwist("/baselink", "/orbslamex/odom", time, interval, twist);
+    // }
+    // catch (tf::TransformException ex)
+    // {
+    //     ROS_ERROR("transfrom exception : %s", ex.what());
+    // }
+    // 将获取到的速度信息存储到里程计消息中
+    // transformer.lookupTwist("/baselink", "/orbslamex/odom", time, interval, twist);
+    // odom.twist.twist = twist;
+    // 发布里程计消息
     odom_publisher_.publish(odom);
+    // 保存里程计信息为TUM格式文件
+    // 定义文件路径
+    std::string tum_file_path = "/home/ylsdb20/dev/hao_orb_ws/results/odom_trajectory.txt";
+    // 打开文件
+    std::ofstream tum_file(tum_file_path, std::ios::app);
+    // 检查文件是否成功打开
+    if (tum_file.is_open())
+    {
+        // 将里程计信息写入文件，TUM格式为：timestamp tx ty tz qx qy qz qw
+        tum_file << odom.header.stamp.toSec() << " "
+                 << odom.pose.pose.position.x << " " << odom.pose.pose.position.y << " " << odom.pose.pose.position.z << " "
+                 << odom.pose.pose.orientation.x << " " << odom.pose.pose.orientation.y << " " << odom.pose.pose.orientation.z << " " << odom.pose.pose.orientation.w << std::endl;
+        // 关闭文件
+        tum_file.close();
+        // 输出日志，表示保存成功
+        // ROS_INFO("Odom trajectory saved to %s", tum_file_path.c_str());
+    }
+    else
+    {
+        // 输出错误日志，表示文件打开失败
+        ROS_ERROR("Failed to open file: %s", tum_file_path.c_str());
+    }
 }
 
 /*
@@ -788,7 +845,7 @@ void ROSPublisher::publishState(Tracking *tracking)
         //  这个函数的作用是将 ORB_SLAM2 的内部状态转换为 ROS 消息格式，以便发布到 ROS 主题中。
         orb_state_ = toORBStateMessage(tracking->mState);
     }
-    cout << colouredString("ORBState: ", GREEN, REGULAR) << stateDescription(orb_state_) << endl;
+    // cout << colouredString("ORBState: ", GREEN, REGULAR) << stateDescription(orb_state_) << endl;
     // 这段代码检查是否有节点订阅了 ORBState 主题。如果有订阅者，则执行以下操作：
     // 更新 ORBState 消息的时间戳为当前 ROS 时间
     // 使用 state_pub_ 发布 ORBState 消息到 ROS 主题中。
@@ -879,7 +936,7 @@ void ROSPublisher::Run()
         // only publish map, map updates and camera pose, if camera pose was updated
         if (isCamUpdated())
         {
-            // NOTE cout << colouredString("Camera pose updated", GREEN, BOLD) << endl;
+            // cout << colouredString("Camera pose updated", GREEN, BOLD) << endl;
             publishMap();
             publishMapUpdates();
             publishCameraPose();

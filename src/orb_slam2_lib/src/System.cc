@@ -54,8 +54,7 @@ namespace ORB_SLAM2
         if (!bVocLoad)
             throw Failure(std::string("Failed to load vocabulary at: ") + strVocFile);
         else
-            cout << "Vocabulary loaded!" << endl
-                 << endl; // 否则则说明加载成功
+            cout << colouredString("Vocabulary loaded!(in System::GenericBuilder::GenericBuilder)", GREEN, BOLD) << endl;
 
         cv::FileNode mapfile_node = mSettings["Map.mapfile"];
         bReuseMap = false;
@@ -63,7 +62,7 @@ namespace ORB_SLAM2
         {
             mapfile = (string)mapfile_node;
         }
-        cout << colouredString("MapFile name: ", GREEN, REGULAR) << mapfile << endl;
+        cout << colouredString("MapFile name: ", BLUE, BOLD) << mapfile << endl;
 
         load_map = mSettings["Map.load_map"];
         save_map = mSettings["Map.save_map"];
@@ -82,6 +81,7 @@ namespace ORB_SLAM2
         }
 
         // NOTE: 在本主进程中初始化追踪线程
+        cout << colouredString("Initializing Tracking Thread(in System::GenericBuilder::GenericBuilder)...", GREEN, BOLD) << endl;
         mpTracker = make_unique<Tracking>(&mVocabulary,             // 字典
                                           mpMap.get(),              // get mpMap
                                           mpKeyFrameDatabase.get(), // get mpKeyFrameDatabase
@@ -89,9 +89,11 @@ namespace ORB_SLAM2
                                           mSensor,                  // 传感器类型iomanip
                                           bReuseMap);
         // NOTE: 初始化局部建图线程并运行
+        cout << colouredString("Initializing Local Mapping Thread(in System::GenericBuilder::GenericBuilder)...", GREEN, BOLD) << endl;
         mpLocalMapper = make_unique<LocalMapping>(mpMap.get(),           // 指定使iomanip
                                                   mSensor == MONOCULAR); // TODO 为什么这个要设置成为MONOCULAR？？？
         // NOTE: 初始化闭环检测线程并运行
+        cout << colouredString("Initializing Loop Closing Thread(in System::GenericBuilder::GenericBuilder)...", GREEN, BOLD) << endl;
         mpLoopCloser = make_unique<LoopClosing>(mpMap.get(),              // 地图
                                                 mpKeyFrameDatabase.get(), // 关键帧数据库
                                                 &mVocabulary,             // ORB字典
@@ -177,9 +179,7 @@ namespace ORB_SLAM2
         //      << "This is free software, and you are welcome to redistribute it" << endl
         //      << "under certain conditions. See LICENSE.txt." << endl
         //      << endl;
-
-        cout << "Input sensor was set to: ";
-
+        cout << colouredString("ORB-SLAM2 System Created!(System::System(std::unique_ptr<IBuilder> builder)) Input sensor was set to: ", GREEN, BOLD);
         if (mSensor == MONOCULAR)
             cout << "Monocular" << endl;
         else if (mSensor == STEREO)
@@ -191,7 +191,7 @@ namespace ORB_SLAM2
         bUseSavedMap = mpBuilder->GetMapReuseOption();
 
         // Load ORB Vocabulary
-        cout << colouredString("Loading ORB Vocabulary...", GREEN, REGULAR) << endl;
+        cout << colouredString("Loading ORB Vocabulary...(System::System(std::unique_ptr<IBuilder> builder)", GREEN, REGULAR) << endl;
         // 建立一个新的ORB字典
         mpVocabulary = mpBuilder->GetVocabulary();
 
@@ -620,6 +620,7 @@ namespace ORB_SLAM2
         }
 
         // 从地图中获取所有的关键帧
+        // 获取地图中的所有关键帧，并按照关键帧的先后顺序（id）进行排序
         vector<KeyFrame *> vpKFs = mpMap->GetAllKeyFrames();
 
         // 根据关键帧生成的先后顺序（id）进行排序
@@ -628,10 +629,11 @@ namespace ORB_SLAM2
         // Transform all keyframes so that the first keyframe is at the origin.
         // After a loop closure the first keyframe might not be at the origin.
         // 到原点的转换，获取这个转换矩阵
+        // 通过将第一个关键帧的位姿逆变换得到，将所有关键帧的位姿变换到第一个关键帧的参考坐标系下，这样做是为了确保第一个关键帧在原点上。这个变换矩阵存储在 Two 中
         cv::Mat Two = vpKFs[0]->GetPoseInverse();
 
         // Construc the full path to the map file
-        boost::filesystem::path maps_directory = "../../../maps";
+        boost::filesystem::path maps_directory = "/home/ylsdb20/dev/hao_orb_ws/results";
         boost::filesystem::path full_path = maps_directory / filename;
         // 文件写入的准备工作
         ofstream f;
@@ -644,6 +646,8 @@ namespace ORB_SLAM2
         // Frames not localized (tracking failure) are not saved.
 
         // For each frame we have a reference keyframe (lRit), the timestamp (lT) and a flag
+        // 每一帧都有一个参考关键帧，相对于参考关键帧有一个相对位姿，所以每一帧的位姿是按相对参考关键帧位姿保存的
+        // 这样保存的目的在于：关键帧位姿在localmapping中是不断调整的，所以认为更加准确，如果直接保存Frame的位姿，那就没那么准确
         // which is true when tracking failed (lbL).
         list<ORB_SLAM2::KeyFrame *>::iterator lRit = mpTracker->mlpReferences.begin();
         list<double>::iterator lT = mpTracker->mlFrameTimes.begin();
@@ -666,12 +670,16 @@ namespace ORB_SLAM2
                 pKF = pKF->GetParent();
             }
 
+            //参考关键帧的位姿
             Trw = Trw * pKF->GetPose() * Two;
-
+            // 参考关键帧到当前帧的相对位姿*参考关键帧位姿=当前帧位姿
             cv::Mat Tcw = (*lit) * Trw;
+            //相机到世界的旋转 转置就是求逆 
             cv::Mat Rwc = Tcw.rowRange(0, 3).colRange(0, 3).t();
+            //相机到世界的平移
+            // 由于相机位姿是相对于世界坐标系的逆，所以平移向量是通过将相机坐标系下的原点沿着相机坐标系的 z 轴反向平移得到
             cv::Mat twc = -Rwc * Tcw.rowRange(0, 3).col(3);
-
+            // 以四元数的形式输出
             vector<float> q = Converter::toQuaternion(Rwc);
 
             f << setprecision(6) << *lT << " " << setprecision(9) << twc.at<float>(0) << " " << twc.at<float>(1) << " " << twc.at<float>(2) << " " << q[0] << " " << q[1] << " " << q[2] << " " << q[3] << endl;
@@ -691,7 +699,7 @@ namespace ORB_SLAM2
         // cv::Mat Two = vpKFs[0]->GetPoseInverse();
 
         // Construc the full path to the map file
-        boost::filesystem::path maps_directory = "../../../maps";
+        boost::filesystem::path maps_directory = "/home/ylsdb20/dev/hao_orb_ws/results";
         boost::filesystem::path full_path = maps_directory / filename;
         ofstream f;
         f.open(full_path.c_str());
@@ -733,7 +741,7 @@ namespace ORB_SLAM2
         cv::Mat Two = vpKFs[0]->GetPoseInverse();
 
         // Construc the full path to the map file
-        boost::filesystem::path maps_directory = "../../../maps";
+        boost::filesystem::path maps_directory = "/home/ylsdb20/dev/hao_orb_ws/results";
         boost::filesystem::path full_path = maps_directory / filename;
         ofstream f;
         f.open(full_path.c_str());
@@ -798,7 +806,7 @@ namespace ORB_SLAM2
     void System::SaveMap(const string &filename)
     {
         // Construc the full path to the map file
-        boost::filesystem::path maps_directory = "../../../maps";
+        boost::filesystem::path maps_directory = "/home/ylsdb20/dev/hao_orb_ws/results";
         boost::filesystem::path full_path = maps_directory / filename;
         // lock MapPoint global Mutex when saving map
         unique_lock<mutex> MapPointGlobal(MapPoint::mGlobalMutex);
