@@ -1,24 +1,3 @@
-/**
-* This file is part of ORB-SLAM2.
-*
-* Copyright (C) 2014-2016 Raúl Mur-Artal <raulmur at unizar dot es> (University of Zaragoza)
-* For more information see <https://github.com/raulmur/ORB_SLAM2>
-*
-* ORB-SLAM2 is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, either version 3 of the License, or
-* (at your option) any later version.
-*
-* ORB-SLAM2 is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with ORB-SLAM2. If not, see <http://www.gnu.org/licenses/>.
-*/
-
-
 #include <iostream>
 #include <algorithm>
 #include <fstream>
@@ -105,7 +84,7 @@ int main(int argc, char **argv)
 
     //  ================== Set stack size =============//
     // Fix map saving/loading problem when large Maps are processed
-    cout << " ros_stereo main set stack size" << endl;
+    //该值的含义是设置堆栈大小为 16 * 2014 * 1024 字节，即约为 32 MB。 
     const rlim_t kStackSize = 16L * 2014L * 1024L;
     struct rlimit rl;
     int result;
@@ -123,19 +102,8 @@ int main(int argc, char **argv)
             }
         }
     }
+    //STEP STEREO 1 初始化 ROS
     ros::init(argc, argv, "Stereo");
-    // if (ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug))
-    // {
-    //     ros::console::notifyLoggerLevelsChanged();
-    // }
-
-    // ROS_DEBUG_STREAM("DEBUG message.");
-    // ROS_INFO_STREAM("INFO message.");
-    // ROS_WARN_STREAM("WARN message.");
-    // ROS_ERROR_STREAM("ERROR message.");
-    // ROS_FATAL_STREAM("FATAL message.");
-    // ROS_INFO("==========================================");
-
     ros::start();
     if(argc <= 4)
     {
@@ -148,8 +116,13 @@ int main(int argc, char **argv)
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
     const double freq = 100.0;
     // Set up a namespace for topics
+    // STEP STEREO 2 创建 ORB_SLAM2::System
+    //"/orbslamex" 是节点的命名空间。通过指定命名空间，你可以将节点与其他节点进行区分，并防止话题、服务等名称的冲突。
     ros::NodeHandle nh("/orbslamex");
+    // 创建了一个 ORB_SLAM2 系统对象 SLAM，使用了自定义的 ROS 系统构建器 ROSSystemBuilder。
+    // 构建器接受了一些参数，包括 VOC 文件、设置文件、传感器类型等，并且传递了 ROS 节点句柄 nh。这意味着 ORB_SLAM2 系统将在名为 /orbslamex 的 ROS 节点下运行
     ORB_SLAM2::System SLAM(make_unique<ROSSystemBuilder>(argv[1], argv[2], ORB_SLAM2::System::STEREO, freq, nh));
+    // 创建了一个 ImageGrabber 对象 igb，并将之前创建的 ORB_SLAM2 系统对象的指针传递给它，以便它可以使用该系统来抓取图像。
     ImageGrabber igb(&SLAM);
 
     //Stream class to operate on strings.
@@ -223,7 +196,6 @@ int main(int argc, char **argv)
     SLAM.Shutdown();
     printf("Time taken between SLAM.Start() and SLAM.Shutdown(): %.2fs\n", (double)(clock() - tStart)/CLOCKS_PER_SEC);
 
-    // Save camera trajectory, you find those files in roborace_ws/devel_isolated/orb_slam2_ros/lib/orb_slam2_ros
     // visualize the trajectories with evo-traj package
     bool bFileName = (((argc - 4) % 2) == 1);
 
@@ -247,5 +219,3 @@ int main(int argc, char **argv)
 
     return 0;
 }
-
-

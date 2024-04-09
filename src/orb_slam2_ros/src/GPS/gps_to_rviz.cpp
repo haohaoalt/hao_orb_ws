@@ -9,7 +9,7 @@
 #include <dirent.h>
 #include <boost/filesystem.hpp>
 #include "colorutils.h"
-//经纬度转换
+// 经纬度转换
 #include <string>
 #include <cmath>
 #include <orb_slam2_ros/mutimap.h>
@@ -29,7 +29,6 @@ my_pose init_pose;
 // 声明一个全局的 mutimap_publisher
 ros::Publisher mapstatepub;
 
-
 // 将度转换为度分秒
 std::string degreesToDMS(double degrees)
 {
@@ -43,7 +42,7 @@ std::string degreesToDMS(double degrees)
     return std::to_string(deg) + std::to_string(min) + std::to_string(sec);
 }
 
-//生成地图名
+// 生成地图名
 std::string generateMapName(double latitude, double longitude)
 {
     std::string lat_dms = degreesToDMS(latitude);
@@ -52,6 +51,7 @@ std::string generateMapName(double latitude, double longitude)
     // 根据经纬度的度分秒值生成地图名
     return "N" + lat_dms + "E" + lon_dms;
 }
+
 // Function to generate map names from filenames
 std::string LoadMapName(const std::string &filename)
 {
@@ -65,7 +65,6 @@ double rad(double d)
 {
     return d * 3.1415926 / 180.0;
 }
-
 
 // Function to get all filenames in a directory
 std::vector<std::string> getFilenames(const std::string &directory)
@@ -91,9 +90,28 @@ std::vector<std::string> getFilenames(const std::string &directory)
     }
     return filenames;
 }
+
 void gpsCallback(const sensor_msgs::NavSatFixConstPtr &gps_msg_ptr)
 {
-    // 初始化
+    // STEP1 发布 mutimap 消息
+    //  创建并填充 mutimap 消息对象
+    orb_slam2_ros::mutimap mutimap_msg;
+    // 填充 mutimap_msg 的字段
+    // 假设您有一组要添加到消息中的字符串
+    // Specify the directory path
+    std::string directory = "/home/ylsdb20/dev/hao_orb_ws/maps";
+    // Get all filenames in the directory
+    std::vector<std::string> filenames = getFilenames(directory);
+
+    for (const auto &filename : filenames)
+    {
+        mutimap_msg.data.push_back(LoadMapName(filename));
+    }
+    // 发布 mutimap 消息
+    mapstatepub.publish(mutimap_msg);
+
+    // STEP2 处理 gps 数据
+    //  初始化
     if (!init)
     {
         init_pose.latitude = gps_msg_ptr->latitude;
@@ -152,24 +170,12 @@ void gpsCallback(const sensor_msgs::NavSatFixConstPtr &gps_msg_ptr)
         ros_path_.poses.push_back(pose);
 
         // ROS_INFO("\033[1;32m( gps path x:%0.6f ,y:%0.6f ,z:%0.6f)\033[0m", x, y, z);
-
+        // STEP3 发布轨迹
         state_pub_.publish(ros_path_);
     }
-    // 创建并填充 mutimap 消息对象
-    orb_slam2_ros::mutimap mutimap_msg;
-    // 填充 mutimap_msg 的字段
-    // 假设您有一组要添加到消息中的字符串
-    // Specify the directory path
-    std::string directory = "/home/ylsdb20/dev/hao_orb_ws/maps";
-    // Get all filenames in the directory
-    std::vector<std::string> filenames = getFilenames(directory);
 
-    for (const auto &filename : filenames)
-    {
-        mutimap_msg.data.push_back(LoadMapName(filename));
-    }
-    // 发布 mutimap 消息
-    mapstatepub.publish(mutimap_msg);
+    //STEP4 清空 mutimap_msg
+    // 清空 mutimap_msg
     mutimap_msg.data.clear();
 }
 
@@ -214,18 +220,20 @@ void saveTrajectoryTUM(const nav_msgs::Path::ConstPtr &path, const std::string &
     }
     f.close();
 }
+
 int main(int argc, char **argv)
 {
     init = false;
     ros::init(argc, argv, "gps_to_rviz");
     ros::NodeHandle n;
-    //周期发布 msg 消息
+    // 周期发布 msg 消息
     mapstatepub = n.advertise<orb_slam2_ros::mutimap>("mapstate", 10);
     ros::Subscriber pose_sub = n.subscribe("/gps/fix", 20, gpsCallback);
 
     state_pub_ = n.advertise<nav_msgs::Path>("gps_path", 20);
-    ros::Subscriber sub = n.subscribe<nav_msgs::Path>("gps_path", 1, [&](const nav_msgs::Path::ConstPtr &msg){ saveTrajectoryTUM(msg, "gpstrajectory.txt"); });
-    std::cout << colouredString("GPS tum trajectory saved to gpstrajectory.txt", GREEN,BOLD) << std::endl;
+    ros::Subscriber sub = n.subscribe<nav_msgs::Path>("gps_path", 1, [&](const nav_msgs::Path::ConstPtr &msg)
+                                                      { saveTrajectoryTUM(msg, "gpstrajectory.txt"); });
+    std::cout << colouredString("GPS tum trajectory saved to gpstrajectory.txt", GREEN, BOLD) << std::endl;
     ros::spin();
     return 0;
 }

@@ -770,27 +770,37 @@ void ROSPublisher::publishOctomap()
 
     // write out the octomap to folder orbslam2_ws/devel/lib/orb_slam2_ros for debugging purpose
     // TODO publishOctomap
-    octomap_.write("../../../maps/octomap.ot");
+    octomap_.write("../../../results/octomap.ot");
 }
 
 /*
  * Publishes the ORB_SLAM 2 tracking state as ORBState int and/or as a description string.
  */
+//TODO publisher ORBSLAM STATE
+// 该函数用于发布 ORB_SLAM 2 的跟踪状态，包括 ORBState int 和描述字符串。
 void ROSPublisher::publishState(Tracking *tracking)
 {
+    // 首先检查跟踪对象 tracking 是否为空。如果不为空，则表示已经有了跟踪结果，可以从中提取状态信息。
     if (tracking != NULL)
     {
         // save state from tracking, even if there are no subscribers
+        // 如果存在有效的跟踪结果，则调用 toORBStateMessage 函数将跟踪状态转换为 ROS 消息类型 orb_state_。
+        //  这个函数的作用是将 ORB_SLAM2 的内部状态转换为 ROS 消息格式，以便发布到 ROS 主题中。
         orb_state_ = toORBStateMessage(tracking->mState);
     }
-
+    cout << colouredString("ORBState: ", GREEN, REGULAR) << stateDescription(orb_state_) << endl;
+    // 这段代码检查是否有节点订阅了 ORBState 主题。如果有订阅者，则执行以下操作：
+    // 更新 ORBState 消息的时间戳为当前 ROS 时间
+    // 使用 state_pub_ 发布 ORBState 消息到 ROS 主题中。
     if (state_pub_.getNumSubscribers() > 0)
     {
         // publish state as ORBState int
         orb_state_.header.stamp = ros::Time::now();
         state_pub_.publish(orb_state_);
     }
-
+    // 检查是否有节点订阅了状态描述主题。如果有订阅者，则执行以下操作
+    // 创建一个 std_msgs::String 类型的消息 state_desc_msg，并将 ORBState 的描述信息赋值给 state_desc_msg.data。
+    // 使用 state_desc_pub_ 发布 state_desc_msg 到 ROS 主题中。
     if (state_desc_pub_.getNumSubscribers() > 0)
     {
         // publish state as string
