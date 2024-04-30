@@ -28,7 +28,7 @@
 
   <!-- ORBSLAM2 with Ros -->
   <!-- Provide the correct settings .yaml file to specify camera parameters and ORB feature settings -->
-  <node pkg="orb_slam2_ros" type="RGBD_yolo" name="orb_slam2" args="$(find orb_slam3_lib)/Vocabulary/ORBvoc.bin $(arg orb_settings_file) $(arg sequence)" cwd="node" output="screen">
+  <node pkg="orb_slam3_ros" type="RGBD_yolo" name="orb_slam2" args="$(find orb_slam3_lib)/Vocabulary/ORBvoc.bin $(arg orb_settings_file) $(arg sequence)" cwd="node" output="screen">
     <param name="octomap_enabled" value="$(arg octomap_enabled)"/>
     <!-- needed for projected/gradient map-->
     <param name="octomap_resolution" value="0.02"/>
@@ -43,7 +43,7 @@
 <node pkg="rqt_image_view" type="rqt_image_view" name="rqt_image_view" args="image:=/orb_slam2/frame" if="$(arg visualize_orb_features)"/> -->
 
   <!-- 在rviz中显示-->
-  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find orb_slam2_ros)/rviz/orb2-map-tum.rviz" required="true" />
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find orb_slam3_ros)/rviz/orb2-map-tum.rviz" required="true" />
 
 
 

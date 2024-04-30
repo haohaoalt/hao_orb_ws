@@ -6,4 +6,5 @@ model/*
 /*.pcd
 /*.osa
 maps/*
+src/orb_slam3_lib/lib/*
 
