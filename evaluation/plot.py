@@ -2,7 +2,16 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 
-def parse_trajectory_file(file_path):
+# ANSI颜色转义码
+class colors:
+    CYAN = '\033[96m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    RED = '\033[91m'
+    BOLD = '\033[1m'
+    END = '\033[0m'
+
+def parse_trajectory_file(file_path,color):
     timestamps = []
     positions = []
     orientations = []
@@ -17,6 +26,15 @@ def parse_trajectory_file(file_path):
             timestamps.append(timestamp)
             positions.append(position)
             orientations.append(orientation)
+
+    num_poses = len(positions)
+    trajectory_length = np.linalg.norm(positions[-1] - positions[0])
+    duration = timestamps[-1] - timestamps[0]
+
+    print(colors.BOLD + color + "Trajectory Information for" + colors.END, colors.BOLD + file_path + colors.END)
+    print(colors.BOLD + color + "Number of poses:" + colors.END, colors.BOLD + color + str(num_poses) + colors.END)
+    print(colors.BOLD + color + "Trajectory length:" + colors.END, colors.BOLD + color + str(trajectory_length) + colors.END)
+    print(colors.BOLD + color + "Trajectory duration:" + colors.END, colors.BOLD + color + str(duration) + colors.END)
 
     return timestamps, positions, orientations
 
@@ -62,7 +80,7 @@ if __name__ == "__main__":
 
     for i in range(1, len(sys.argv)):
         file_path = sys.argv[i]
-        timestamps, positions, orientations = parse_trajectory_file(file_path)
+        timestamps, positions, orientations = parse_trajectory_file(file_path,colors.GREEN)
         plot_trajectory(ax_xyz, positions, 'xyz', file_path)
         plot_trajectory(ax_xz, positions, 'xz', file_path)
         plot_trajectory(ax_xy, positions, 'xy', file_path)

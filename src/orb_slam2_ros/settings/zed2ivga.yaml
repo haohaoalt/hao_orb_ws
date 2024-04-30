@@ -5,10 +5,10 @@
 #--------------------------------------------------------------------------------------------
 
 # Camera calibration and distortion parameters (OpenCV)
-Camera.fx: 269.22735595703125
-Camera.fy: 269.1235046386719
-Camera.cx: 334.2732849121094
-Camera.cy: 186.14935302734375
+Camera.fx: 267.4916687011719
+Camera.fy: 267.6088256835937
+Camera.cx: 343.1151733398437
+Camera.cy: 343.1151733398437
 
 Camera.k1: 0.0
 Camera.k2: 0.0
@@ -23,7 +23,7 @@ Camera.fps: 30.0 #30 for ZED, as defined in veh_rccar_parameters zed ros wrapper
 
 # stereo baseline(in meters - for ZED = 0.12) times fx
 # stereo baseline times fx
-Camera.bf: 32.31
+Camera.bf: 32.1
 
 # Color order of the images (0: BGR, 1: RGB. It is ignored if images are grayscale)
 Camera.RGB: 1
@@ -36,7 +36,7 @@ ThDepth: 20
 #--------------------------------------------------------------------------------------------
 
 # ORB Extractor: Number of features per image
-ORBextractor.nFeatures: 4000
+ORBextractor.nFeatures: 2000
 
 # ORB Extractor: Scale factor between levels in the scale pyramid
 ORBextractor.scaleFactor: 1.2
@@ -49,7 +49,7 @@ ORBextractor.nLevels: 8
 # Firstly we impose iniThFAST. If no corners are detected we impose a lower value minThFAST
 # You can lower these values if your images have low contrast
 ORBextractor.iniThFAST: 25 #before 15
-ORBextractor.minThFAST: 6 #before 6
+ORBextractor.minThFAST: 7 #before 6
 
 #--------------------------------------------------------------------------------------------
 # Viewer Parameters
@@ -71,7 +71,7 @@ Viewer.ViewpointF: 2000
 #Name of mapfile to be saved
 #No need to specify a path if the map is located in the folder devel/lib/orbs_slam2_ros
 #(same location as the executable Stereo/Mono/RGB file )
-Map.mapfile: map.bin
+Map.mapfile: M4192.bin
 #Set to 1 if you want to save a map, 0 if not
 Map.save_map: 1
 #Set to 1 if you want to load a saved map, 0 if not

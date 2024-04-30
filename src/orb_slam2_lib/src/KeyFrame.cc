@@ -43,7 +43,6 @@ namespace ORB_SLAM2
             // Feature vector associate features with nodes in the 4th level (from leaves up)
             // We assume the vocabulary tree has 6 levels, change the 4 otherwise
             mpORBvocabulary->transform(vCurrentDesc, mBowVec, mFeatVec, 4);
-            // cout << colouredString("KeyFrame::ComputeBoW() mpORBvocabulary->transform end ", BLUE, BOLD) << "mBowVec:" << mBowVec.size() << " | " << "mFeatVec:" << mFeatVec.size() << endl;
         }
     }
 

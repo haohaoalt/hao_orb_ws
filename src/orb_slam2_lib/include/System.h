@@ -99,7 +99,7 @@ public:
     // it's usually more practical to subclass this class instead of the IBuilder.
     class GenericBuilder : public IBuilder {
     public:
-        GenericBuilder(const std::string &strVocFile, const std::string &strSettingsFile, eSensor sensor);
+        GenericBuilder(const std::string &strVocFile, const std::string &strSettingsFile, eSensor sensor, std::string mutimapfile);
         virtual ~GenericBuilder();
 
         virtual bool GetMapSaveOption() override;
@@ -122,7 +122,7 @@ public:
         eSensor mSensor; // 以小写字母m（member的首字母）开头的变量表示类的成员变量
         cv::FileStorage mSettings; // 以小写字母m（member的首字母）开头的变量表示类的成员变量
         ORBVocabulary mVocabulary; // 以小写字母m（member的首字母）开头的变量表示类的成员变量
-
+        string mutimapfile;
         string mapfile;
         int save_map;
         int load_map;
@@ -226,7 +226,7 @@ protected:
 
 private:
       // Save/Load functions
-      void SaveMap(const string &filename);
+      void SaveMap(const std::string &filename);
 
 private:
     // Input sensor
@@ -241,6 +241,7 @@ private:
     // Map structure that stores the pointers to all KeyFrames and MapPoints.
     Map* mpMap;
 
+    string mutimapfile;
     string mapfile;
     //System gets this value via initializer list
     const bool is_save_map;

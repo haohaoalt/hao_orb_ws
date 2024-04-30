@@ -4,3 +4,6 @@
 maps/*
 results/*.bin
 results/*.ot
+results/*.txt
+results/*.tum
+results/**

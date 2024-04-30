@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
 <!-- rosbag arguments -->
-<arg name="sequence" default="0127"/>
+<arg name="sequence" default="zed2i-vali"/>
 
-<arg name="bag_data_path" default="/media/hayden/Friday/dataset/Sensors/carmera/zed2i/$(arg sequence).bag"/>
+<arg name="bag_data_path" default="/media/ylsdb20/Friday/dataset/Sensors/carmera/zed2i/419/$(arg sequence).bag"/>
 
 
 <!-- ORBSLAM arguments -->
@@ -23,7 +23,7 @@
 
 <!-- ORBSLAM2 with Ros -->
 <!-- Provide the correct settings .yaml file to specify camera parameters and ORB feature settings -->
-<node pkg="orb_slam2_ros" type="Stereo" name="orb_slam2" args="$(find orb_slam2_lib)/Vocabulary/ORBvoc.bin $(arg orb_settings_file) False $(arg sequence)" cwd="node" output="screen">
+<node pkg="orb_slam2_ros" type="Stereo" name="orb_slam2" args="$(find orb_slam2_lib)/Vocabulary/ORBvoc.bin $(arg orb_settings_file) false $(arg sequence)" cwd="node" output="screen">
   <!-- <param name="octomap_enabled" value="$(arg octomap_enabled)"/> -->
   <!-- needed for projected/gradient map-->
   <param name="octomap_resolution" value="0.02"/>

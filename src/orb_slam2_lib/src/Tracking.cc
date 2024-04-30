@@ -1,22 +1,3 @@
-/**
- * This file is part of ORB-SLAM2.
- *
- * Copyright (C) 2014-2016 Raúl Mur-Artal <raulmur at unizar dot es> (University of Zaragoza)
- * For more information see <https://github.com/raulmur/ORB_SLAM2>
- *
- * ORB-SLAM2 is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * ORB-SLAM2 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with ORB-SLAM2. If not, see <http://www.gnu.org/licenses/>.
- */
 // 当跟踪状态不正常的时候, 使用重定位跟踪进行挽回.
 //  Step Tracking.cc 流程
 //  Step 1: 计算当前帧特征点的词袋向量
@@ -72,12 +53,12 @@ namespace ORB_SLAM2
                                          mbOnlyTracking(false), // 处于SLAM模式
                                          mbVO(false),           // 当处于纯跟踪模式的时候，这个变量表示了当前跟踪状态的好坏
                                          mpORBVocabulary(pVoc),
-                                         mpKeyFrameDB(pKFDB), 
+                                         mpKeyFrameDB(pKFDB),
                                          mpInitializer(nullptr), // 暂时给地图初始化器设置为空指针
                                          mpSystem(nullptr),
                                          mpFrameSubscriber(nullptr),
-                                         mpMapPublisher(nullptr), 
-                                         mpMap(pMap), 
+                                         mpMapPublisher(nullptr),
+                                         mpMap(pMap),
                                          mnLastRelocFrameId(0) // 恢复为0,没有进行这个过程的时候的默认值
     {
         // Load camera parameters from settings file
@@ -201,7 +182,7 @@ namespace ORB_SLAM2
             else
                 mDepthMapFactor = 1.0f / mDepthMapFactor;
         }
-        //NOTE 逻辑上是若使用重用地图的方式，那么mState就是LOST
+        // NOTE 逻辑上是若使用重用地图的方式，那么mState就是LOST
         if (bReuseMap)
         {
             mState = LOST;
@@ -223,12 +204,12 @@ namespace ORB_SLAM2
         mpPublisherThread = pPubThread;
     }
 
-    //NOTE：对双目图像的处理
+    // NOTE：对双目图像的处理
     cv::Mat Tracking::GrabImageStereo(const cv::Mat &imRectLeft, const cv::Mat &imRectRight, const double &timestamp)
     {
         mImGray = imRectLeft;
         cv::Mat imGrayRight = imRectRight;
-        //STEP 1 ：将RGB或RGBA图像转为灰度图像
+        // STEP 1 ：将RGB或RGBA图像转为灰度图像
         if (mImGray.channels() == 3)
         {
             if (mbRGB)
@@ -369,7 +350,7 @@ namespace ORB_SLAM2
     {
         mImGray = im;
 
-        //STEP 1: 如果输入的图像不为灰度图，则转换为灰度图。
+        // STEP 1: 如果输入的图像不为灰度图，则转换为灰度图。
         if (mImGray.channels() == 3)
         {
             if (mbRGB)
@@ -385,8 +366,8 @@ namespace ORB_SLAM2
                 cvtColor(mImGray, mImGray, cv::COLOR_RGBA2GRAY);
         }
 
-        //STEP 2 ：构造Frame
-        // 判断当前是否进行了初始化，如果当前为第一帧，则 mState==NO_IMAGES_YET，表示没有进行初始化
+        // STEP 2 ：构造Frame
+        //  判断当前是否进行了初始化，如果当前为第一帧，则 mState==NO_IMAGES_YET，表示没有进行初始化
         if (mState == NOT_INITIALIZED || mState == NO_IMAGES_YET)
             mCurrentFrame = Frame(mImGray, timestamp, mpIniORBextractor, // 初始化ORB特征点提取器会提取2倍的指定特征点数目
                                   mpORBVocabulary, mK, mDistCoef, mbf, mThDepth);
@@ -394,7 +375,7 @@ namespace ORB_SLAM2
             mCurrentFrame = Frame(mImGray, timestamp, mpORBextractorLeft, // 正常运行的时的ORB特征点提取器，提取指定数目特征点
                                   mpORBVocabulary, mK, mDistCoef, mbf, mThDepth);
 
-        //STEP 3 ：跟踪
+        // STEP 3 ：跟踪
         Track();
 
         return mCurrentFrame.mTcw.clone();
@@ -462,15 +443,12 @@ namespace ORB_SLAM2
             else
             {
                 // NOTE  Localization Mode: Local Mapping is deactivated
-                cout << colouredString("mbOnlyTracking = ", PURPLE, BOLD) << mbOnlyTracking << endl;
-                cout << mCurrentFrame.mTcw << endl;
-                cout << "=====================================================================" << endl;
                 // 纯追踪模式：不插入新的关键帧，不添加新的地图点，局部地图线程不工作，而且回环检测线程也不会工作，只会追踪地图中现有的地图点。
                 // Step 2：只进行跟踪tracking，局部地图不工作
                 if (mState == LOST)
                 {
                     // Step 2.1 如果跟丢了，只能重定位
-                    cout << colouredString("RRRRRRRRRRRRRRRRRRRRRRRRRRRR mbOnlyTracking + mState == LOST = Relocalization",RED,BOLD) << endl;
+                    cout << colouredString("RRRRRRRRRRRRRRRRRRRRRRRRRRRR mbOnlyTracking + mState == LOST = Relocalization", RED, BOLD) << endl;
                     bOK = Relocalization();
                 }
                 else
@@ -484,13 +462,13 @@ namespace ORB_SLAM2
                     {
                         // In last frame we tracked enough MapPoints in the map
                         // Step 2.2 如果跟踪正常，使用恒速模型 或 参考关键帧跟踪
-                        cout << colouredString("mVelocity is : ", RED, REGULAR) << mVelocity << endl;
                         //[0.999735, 0.0067194519, -0.022020478, -0.0009441562;
                         //  -0.0068219034, 0.9999662, -0.0045828605, 0.00057902932;
                         //  0.021988939, 0.004731793, 0.99974698, 0.00028265268;
                         //  0, 0, 0, 1]
                         if (!mVelocity.empty())
                         {
+                            // cout << colouredString("================mState != LOST mbVO is false, TrackWithMotionModel", GREEN, BOLD) << endl;
                             bOK = TrackWithMotionModel();
                             // 为了和前面模式统一，这个地方是不是应该加上
                             // if(!bOK)
@@ -523,11 +501,10 @@ namespace ORB_SLAM2
                         // 运动模型得到的位姿
                         cv::Mat TcwMM;
 
-
                         // Step 2.3 当运动模型有效的时候,根据运动模型计算位姿
                         if (!mVelocity.empty())
                         {
-                            cout << colouredString("================mState != LOST mbVO is true, TrackWithMotionModel",GREEN,BOLD) << endl;
+                            cout << colouredString("================mState != LOST mbVO is true, TrackWithMotionModel", GREEN, BOLD) << endl;
                             bOKMM = TrackWithMotionModel();
                             // 将恒速模型跟踪结果暂存到这几个变量中，因为后面重定位会改变这些变量
                             vpMPsMM = mCurrentFrame.mvpMapPoints;
@@ -721,14 +698,14 @@ namespace ORB_SLAM2
         }
     }
 
-    //NOTE 双目初始化
+    // NOTE 双目初始化
     void Tracking::StereoInitialization()
     {
         cout << colouredString("Stereo and RGBD init in StereoInitialization", GREEN, REGULAR) << endl;
         if (mCurrentFrame.N > 500)
         {
             // Set Frame pose to the origin
-            //双目初始化依旧是单位阵作为初始位姿
+            // 双目初始化依旧是单位阵作为初始位姿
             mCurrentFrame.SetPose(cv::Mat::eye(4, 4, CV_32F));
 
             // Create KeyFrame
@@ -793,7 +770,7 @@ namespace ORB_SLAM2
      * Step 6：删除那些无法进行三角化的匹配点
      * Step 7：将三角化得到的3D点包装成MapPoints
      */
-    //NOTE 单目初始化
+    // NOTE 单目初始化
     void Tracking::MonocularInitialization()
     {
 
@@ -937,7 +914,7 @@ namespace ORB_SLAM2
         pKFcur->UpdateConnections();
 
         // Bundle Adjustment
-        cout << colouredString("CreateInitialMapMonocular New Map created with ",GREEN,REGULAR) << mpMap->MapPointsInMap() << " points" << endl;
+        cout << colouredString("CreateInitialMapMonocular New Map created with ", GREEN, REGULAR) << mpMap->MapPointsInMap() << " points" << endl;
 
         Optimizer::GlobalBundleAdjustemnt(mpMap, 20);
 
@@ -1132,7 +1109,7 @@ namespace ORB_SLAM2
         // Update last frame pose according to its reference keyframe
         // Create "visual odometry" points if in Localization Mode
         // STEP 1：更新上一帧的位姿；对于双目或RGB-D相机，还会根据深度值生成临时地图点
-        //TODO onlyTracking是不更新上一帧的位姿
+        // TODO onlyTracking是不更新上一帧的位姿
         UpdateLastFrame();
 
         // STEP 2：根据之前估计的速度，用恒速模型得到当前帧的初始位姿。
@@ -1198,7 +1175,6 @@ namespace ORB_SLAM2
             mbVO = nmatchesMap < 10;
             return nmatches > 20;
         }
-
         return nmatchesMap >= 10;
     }
 
@@ -1650,10 +1626,11 @@ namespace ORB_SLAM2
         for (int i = 0; i < nKFs; i++)
         {
             KeyFrame *pKF = vpCandidateKFs[i];
-            if (pKF->isBad()){
+            if (pKF->isBad())
+            {
                 vbDiscarded[i] = true;
                 cout << "pKF is bad" << endl;
-            }        
+            }
             else
             {
                 // NOTE 当前帧和候选关键帧用BoW进行快速匹配, 匹配结果记录在vvpMapPointMatches

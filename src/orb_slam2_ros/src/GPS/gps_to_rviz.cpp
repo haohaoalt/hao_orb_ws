@@ -99,7 +99,7 @@ void gpsCallback(const sensor_msgs::NavSatFixConstPtr &gps_msg_ptr)
     // 填充 mutimap_msg 的字段
     // 假设您有一组要添加到消息中的字符串
     // Specify the directory path
-    std::string directory = "/home/ylsdb20/dev/hao_orb_ws/maps";
+    std::string directory = "/home/ylsdb20/dev/hao_orb_ws/maps/Release";
 
     std::string map_name = generateMapName(gps_msg_ptr->latitude, gps_msg_ptr->longitude);
     //ROSINFO generateMapName
@@ -163,7 +163,8 @@ void gpsCallback(const sensor_msgs::NavSatFixConstPtr &gps_msg_ptr)
         double z = gps_msg_ptr->altitude - init_pose.altitude;
 
         // 发布轨迹
-        ros_path_.header.frame_id = "path";
+        // TODO global frame id
+        ros_path_.header.frame_id = "orbslamex/frame";
         ros_path_.header.stamp = ros::Time::now();
 
         geometry_msgs::PoseStamped pose;
@@ -240,7 +241,7 @@ int main(int argc, char **argv)
     ros::Subscriber sub = n.subscribe<nav_msgs::Path>("gps_path", 1, [&](const nav_msgs::Path::ConstPtr &msg)
                                                       { saveTrajectoryTUM(msg, "gpstrajectory.txt"); });
     // NOTE 在调用 ros::spin() 之前，ROS节点还没有开始处理ROS消息，因此 ros::Time::now() 返回的时间可能为0。
-    // ros::spin() 是一个阻塞式函数，它会使节点进入循环等待ROS消息的到来
+
     // 只有当按下Ctrl+C时，节点才会退出循环，从而终止程序运行
     ros::spin();
 

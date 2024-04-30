@@ -3,7 +3,7 @@
 #include<fstream>
 #include<chrono>
 #include <memory>
-
+#include <string>
 #include<ros/ros.h>
 #include <cv_bridge/cv_bridge.h>
 
@@ -16,7 +16,6 @@
 //for increasing stack size
 //in order to handle large maps
 #include <sys/resource.h>
-
 using namespace std;
 
 struct ImageGrabber

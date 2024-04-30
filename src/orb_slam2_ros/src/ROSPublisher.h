@@ -86,6 +86,10 @@ protected:
 
 private:
     ORB_SLAM2::FrameDrawer drawer_;
+    bool first_write_; // 标记是否第一次写入
+    std::string tum_file_path_; // TUM odom数据集文件路径
+    // 在类中声明 ofstream 对象
+    std::ofstream tum_file;
 
     // Important: `nh_` goes before the `*_pub_`, because their construction relies on `nh_`!
     ros::NodeHandle nh_;
@@ -168,6 +172,7 @@ public:
                      ORB_SLAM2::System::eSensor sensor,
                      double frequency,
                      ros::NodeHandle nh = ros::NodeHandle(),
+                     std::string mutimapfile = "map.bin",
                      std::string map_frame = ROSPublisher::DEFAULT_MAP_FRAME,
                      std::string camera_frame = ROSPublisher::DEFAULT_CAMERA_FRAME);
     // 析构函数 ~ROSSystemBuilder() 是虚析构函数，用于释放在对象销毁时可能分配的资源。

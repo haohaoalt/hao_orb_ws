@@ -1,13 +1,3 @@
-/*
- * @Author: https://github.com/haohaoalt
- * @Date: 2023-10-19 16:15:18
- * @LastEditors: haohaoalt haohaoalt@163.com
- * @LastEditTime: 2023-10-19 16:21:31
- * @FilePath: /hao_orb_ws/src/orb_slam2_lib/src/Object.cpp
- * @Description: 
- * Copyright (c) 2023 by haohaoalt@163.com, All Rights Reserved. 
- */
-
 #include "Objectyolo.h"
 #include "vector"
 #include "math.h"

@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <fstream>
 #include <chrono>
-
+#include <string>
 #include <ros/ros.h>
 #include <cv_bridge/cv_bridge.h>
 #include <message_filters/subscriber.h>
@@ -88,7 +88,7 @@ int main(int argc, char **argv)
     const rlim_t kStackSize = 16L * 2014L * 1024L;
     struct rlimit rl;
     int result;
-
+    cout << "Setting stack size to 32MB" << endl;
     result = getrlimit(RLIMIT_STACK, &rl);
     if (result == 0)
     {
@@ -104,6 +104,7 @@ int main(int argc, char **argv)
     }
     //STEP STEREO 1 初始化 ROS
     ros::init(argc, argv, "Stereo");
+    cout << "ROS initialized" << endl;
     ros::start();
     if(argc <= 4)
     {
@@ -119,6 +120,7 @@ int main(int argc, char **argv)
     // STEP STEREO 2 创建 ORB_SLAM2::System
     //"/orbslamex" 是节点的命名空间。通过指定命名空间，你可以将节点与其他节点进行区分，并防止话题、服务等名称的冲突。
     ros::NodeHandle nh("/orbslamex");
+    cout << colouredString("Node handle created", BLUE, REGULAR) << endl;
     // 创建了一个 ORB_SLAM2 系统对象 SLAM，使用了自定义的 ROS 系统构建器 ROSSystemBuilder。
     // 构建器接受了一些参数，包括 VOC 文件、设置文件、传感器类型等，并且传递了 ROS 节点句柄 nh。这意味着 ORB_SLAM2 系统将在名为 /orbslamex 的 ROS 节点下运行
     ORB_SLAM2::System SLAM(make_unique<ROSSystemBuilder>(argv[1], argv[2], ORB_SLAM2::System::STEREO, freq, nh));
@@ -173,8 +175,8 @@ int main(int argc, char **argv)
 
     //nh is startup and shutdown of the internal node inside a roscpp program
 
-    message_filters::Subscriber<sensor_msgs::Image> left_sub(nh, "/zed2i/zed_node/left/image_rect_gray", 1);
-    message_filters::Subscriber<sensor_msgs::Image> right_sub(nh, "/zed2i/zed_node/right/image_rect_gray", 1);
+    message_filters::Subscriber<sensor_msgs::Image> left_sub(nh, "/zed2i/zed_node/left_raw/image_raw_gray", 1);
+    message_filters::Subscriber<sensor_msgs::Image> right_sub(nh, "/zed2i/zed_node/right_raw/image_raw_gray", 1);
 
     //a policy used by message_filters::sync::Synchronizer to match messages coming on a set of topics
     //can match messages even if they have different time stamps

@@ -18,12 +18,11 @@
 #include <octomap_ros/conversions.h>
 #include <chrono>
 #include <iostream>
+#include <string>
 #include <fstream>
 #include <nav_msgs/Odometry.h>
 #include "colorutils.h"
-
 #include <boost/filesystem.hpp>
-
 using namespace ORB_SLAM2;
 
 // 通过检查存储整数1的内存的第一个字节来判断系统的字节序是否为大端序。如果第一个字节是1，那么系统是大端序
@@ -178,7 +177,9 @@ ROSPublisher::ROSPublisher(Map *map, double frequency, bool bReuseMap_, ros::Nod
                                                                                               octomap_tf_based_(false),
                                                                                               octomap_(getROSParam<float>(nh, "octomap_resolution", ROSPublisher::DEFAULT_OCTOMAP_RESOLUTION)),
                                                                                               pointcloud_chunks_stashed_(0),
-                                                                                              clear_octomap_(false)
+                                                                                              clear_octomap_(false),
+                                                                                              tum_file_path_("/home/ylsdb20/dev/hao_orb_ws/results/odom_trajectory.txt"),
+                                                                                                  first_write_(false)
 // 这是构造函数的初始化列表，用于初始化类的成员变量。初始化列表以冒号 : 开始，后面跟着逗号分隔的成员初始化器列表。
 {
     // Odys: As in Viewer and Tracking, if a map is loaded we start with state as LOST
@@ -188,12 +189,11 @@ ROSPublisher::ROSPublisher(Map *map, double frequency, bool bReuseMap_, ros::Nod
         orb_state_.state = orb_slam2_ros::ORBState::LOST;
     else
         orb_state_.state = orb_slam2_ros::ORBState::UNKNOWN;
-    cout << colouredString("I'm in ROSPublisher constructor",GREEN,BOLD) << endl;
+    cout << colouredString("In ROSPublisher constructor",GREEN,BOLD) << endl;
     // initialize parameters
     // 从ROS参数服务器中获取一些参数值，包括 OctoMap 是否启用、投影最小高度、梯度图的一些参数等
     // 这里从 ROS 参数服务器中获取一些参数值，并初始化类的成员变量
     // Declare a boolean variable to store the value of octomap_enabled parameter
-    bool octomap_enabled;
     nh.param<bool>("octomap_enabled_", octomap_enabled_, false);
     nh.param<double>("occupancy_projection_min_height", projection_min_height_, ROSPublisher::PROJECTION_MIN_HEIGHT);
     nh.param<float>("occupancy_gradient_max_height", gradient_max_height_, ROSPublisher::GRADIENT_MAX_HEIGHT);
@@ -719,7 +719,7 @@ void ROSPublisher::publishOdom(tf::Quaternion orientation)
     // 创建了一个里程计消息对象 odom，用于存储里程计信息
     nav_msgs::Odometry odom;
     // 设置里程计消息的时间戳，通常设置为当前时间戳或者从其他消息中获取的时间戳。
-    odom.header.stamp = stamp;
+    odom.header.stamp = ros::Time::now(); // 获取当前ROS时间戳
     // 设置里程计消息的坐标系，通常设置为地图坐标系
     odom.header.frame_id = ROSPublisher::DEFAULT_MAP_FRAME;
     //-------------------------------------------------------------------------------------
@@ -744,7 +744,6 @@ void ROSPublisher::publishOdom(tf::Quaternion orientation)
     //-------------------------------------------------------------------------------------
 
     tf::Transform orb_slam_transform;
-
     // 设置平移部分
     orb_slam_transform.setOrigin(tf::Vector3(camera_position_.z(), -camera_position_.x(), -camera_position_.y()));
 
@@ -779,17 +778,25 @@ void ROSPublisher::publishOdom(tf::Quaternion orientation)
     // 发布里程计消息
     odom_publisher_.publish(odom);
     // 保存里程计信息为TUM格式文件
-    // 定义文件路径
-    std::string tum_file_path = "/home/ylsdb20/dev/hao_orb_ws/results/odom_trajectory.txt";
-    // 打开文件
-    std::ofstream tum_file(tum_file_path, std::ios::app);
+    // 判断是否是第一次写入
+    if (!first_write_)
+    {
+        // 如果是第一次写入，打开文件并清空内容
+        tum_file.open(tum_file_path_, std::ofstream::out | std::ofstream::trunc);
+        first_write_ = true;
+    }
+    else
+    {
+        // 如果不是第一次写入，以追加方式打开文件
+        tum_file.open(tum_file_path_, std::ofstream::out | std::ofstream::app);
+    }
     // 检查文件是否成功打开
     if (tum_file.is_open())
     {
         // 将里程计信息写入文件，TUM格式为：timestamp tx ty tz qx qy qz qw
         tum_file << odom.header.stamp.toSec() << " "
-                 << odom.pose.pose.position.x << " " << odom.pose.pose.position.y << " " << odom.pose.pose.position.z << " "
-                 << odom.pose.pose.orientation.x << " " << odom.pose.pose.orientation.y << " " << odom.pose.pose.orientation.z << " " << odom.pose.pose.orientation.w << std::endl;
+                              << odom.pose.pose.position.x << " " << odom.pose.pose.position.y << " " << odom.pose.pose.position.z << " "
+                              << odom.pose.pose.orientation.x << " " << odom.pose.pose.orientation.y << " " << odom.pose.pose.orientation.z << " " << odom.pose.pose.orientation.w << std::endl;
         // 关闭文件
         tum_file.close();
         // 输出日志，表示保存成功
@@ -798,7 +805,7 @@ void ROSPublisher::publishOdom(tf::Quaternion orientation)
     else
     {
         // 输出错误日志，表示文件打开失败
-        ROS_ERROR("Failed to open file: %s", tum_file_path.c_str());
+        ROS_ERROR("Failed to open file: %s", tum_file_path_.c_str());
     }
 }
 
@@ -978,17 +985,26 @@ void ROSPublisher::Update(Tracking *tracking)
     publishImage(tracking);
 }
 
+// TODO ROSSystemBuilder::ROSSystemBuilder 构造函数
+// 基类（父类）的构造函数会在派生类（子类）的构造函数体内的成员初始化列表之前被调用。
+// 也就是说，在 ROSSystemBuilder 的构造函数中，基类 System::GenericBuilder 的构造函数会在 ROSSystemBuilder 的构造函数体内的其他代码之前被调用。
+// 具体来说，System::GenericBuilder 的构造函数会在 ROSSystemBuilder 的构造函数体内的成员初始化列表之前被调用。
+// 然后，ROSSystemBuilder 的成员对象和成员变量会在其构造函数体内的成员初始化列表中被初始化。
 ROSSystemBuilder::ROSSystemBuilder(const std::string &strVocFile,
                                    const std::string &strSettingsFile,
                                    ORB_SLAM2::System::eSensor sensor,
                                    double frequency,
                                    ros::NodeHandle nh,
+                                   std::string mutimapfile,
                                    std::string map_frame,
-                                   std::string camera_frame) : System::GenericBuilder(strVocFile, strSettingsFile, sensor)
+                                   std::string camera_frame) : System::GenericBuilder(strVocFile, strSettingsFile, sensor, mutimapfile)
 {
     // When the GenericBuilder constructor runs, it will check if a map.bin is available
     // and set the var bReuseMap accordingly. Then we can load this var through
     // GetMapReuseOption()
+    cout << colouredString("In ROSSystemBuilder constructor", YELLOW, BOLD) << endl;
+    cout << colouredString("strVocFile: " + strVocFile, YELLOW, REGULAR) << endl;
+    cout << colouredString("strSettingsFile: " + strSettingsFile, YELLOW, REGULAR) << endl;
     mpPublisher = make_unique<ROSPublisher>(GetMap(), frequency, GetMapReuseOption(), std::move(nh));
     mpTracker->SetFrameSubscriber(mpPublisher.get());
     mpTracker->SetMapPublisher(mpPublisher.get());

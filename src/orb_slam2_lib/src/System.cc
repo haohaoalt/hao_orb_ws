@@ -1,28 +1,26 @@
 #include <thread>
 #include <iomanip>
-
 #include "System.h"
 #include "Converter.h"
 #include "Tracking.h"
 #include "LocalMapping.h"
-
 #include "IFrameSubscriber.h"
 #include "IFrameDrawer.h"
 #include "IMapPublisher.h"
 #include "Failure.h"
-
 #include "utils.h"
 #include "colorutils.h"
 #include <unistd.h>
-
 #include <boost/filesystem.hpp>
 
+// 检查一个字符串是否以指定的后缀结束
 static bool has_suffix(const std::string &str, const std::string &suffix)
 {
     std::size_t index = str.find(suffix, str.size() - suffix.size());
     return (index != std::string::npos);
 }
 
+//ORB_SLAM2命名空间
 namespace ORB_SLAM2
 {
 
@@ -30,10 +28,8 @@ namespace ORB_SLAM2
 
     System::GenericBuilder::GenericBuilder(const std::string &strVocFile,
                                            const std::string &strSettingsFile,
-                                           eSensor sensor) :
-
-                                                             mSensor(sensor),
-                                                             mSettings(strSettingsFile.c_str(), cv::FileStorage::READ)
+                                           eSensor sensor,
+                                           std::string mutimapfile) : mSensor(sensor), mSettings(strSettingsFile.c_str(), cv::FileStorage::READ)
     {
         // check Settings file
         if (!mSettings.isOpened())
@@ -62,7 +58,13 @@ namespace ORB_SLAM2
         {
             mapfile = (string)mapfile_node;
         }
-        cout << colouredString("MapFile name: ", BLUE, BOLD) << mapfile << endl;
+        cout << colouredString("MapFile name in yaml: ", BLUE, BOLD) << mapfile << endl;
+        // 如果 mapfile 是 "map.bin"，则将其更改为 mutimapfile
+        if (mapfile == "map.bin")
+        {
+            mapfile = mutimapfile;
+        }
+        cout << colouredString("MapFile name: ", GREEN, BOLD) << mapfile << endl;
 
         load_map = mSettings["Map.load_map"];
         save_map = mSettings["Map.save_map"];
@@ -74,6 +76,7 @@ namespace ORB_SLAM2
         }
         else
         {
+            //NOTE 如果没有加载地图，那么就创建一个新的地图
             // Create KeyFrame Database
             mpKeyFrameDatabase = make_unique<KeyFrameDatabase>(&mVocabulary);
             // Create the Map
@@ -117,16 +120,17 @@ namespace ORB_SLAM2
     // NOTE 加载地图模式
     bool System::GenericBuilder::LoadMap(const string &filename)
     {
+        string full_path = "/home/ylsdb20/dev/hao_orb_ws/maps/" + filename;
 
         // lock MapPoint global Mutex when loading map
         unique_lock<mutex> MapPointGlobal(MapPoint::mGlobalMutex);
-        std::ifstream in(filename, std::ios_base::binary);
+        std::ifstream in(full_path, std::ios_base::binary);
         if (!in)
         {
             cerr << "Cannot Open Mapfile: " << mapfile << ". No existing map file found!" << std::endl;
             return false;
         }
-        cout << "Loading Mapfile: " << mapfile << "....." << std::flush;
+        cout << "Loading Mapfile: " << full_path << "....." << std::flush;
         boost::archive::binary_iarchive ia(in, boost::archive::no_header);
         ia >> pMap;
         ia >> pKeyFrameDatabase;
@@ -219,6 +223,7 @@ namespace ORB_SLAM2
         mpLoopCloser->SetLocalMapper(mpLocalMapper);
 
         // If a Map was loaded successfully then start in Localization Mode
+        //TODO 激活定位模式 似乎定位模式的实现全依靠此判断
         if (bUseSavedMap)
             ActivateLocalizationMode();
     }
@@ -595,8 +600,18 @@ namespace ORB_SLAM2
 
     void System::Shutdown()
     {
+        // 对局部建图线程和回环检测线程发送终止请求
         mpLocalMapper->RequestFinish();
         mpLoopCloser->RequestFinish();
+        // 如果使用了可视化窗口查看器
+        // if (mpViewer)
+        // {
+        //     // 向查看器发送终止请求
+        //     mpViewer->RequestFinish();
+        //     // 等到，知道真正地停止
+        //     while (!mpViewer->isFinished())
+        //         usleep(5000);
+        // }
         mpPublisher->RequestFinish();
 
         // Wait until all thread have effectively stopped
@@ -608,6 +623,10 @@ namespace ORB_SLAM2
         // Save Map only in SLAM mode
         if (!bUseSavedMap && is_save_map)
             SaveMap(mapfile);
+        // if (mpViewer)
+        //     // 如果使用了可视化的窗口查看器执行这个
+        //     //  TODO 但是不明白这个是做什么的。如果我注释掉了呢？
+        //     pangolin::BindToContext("ORB-SLAM2: Map Viewer");
     }
     // NOTE 保存轨迹SaveTrajectoryTUM
     void System::SaveTrajectoryTUM(const string &filename)
@@ -670,14 +689,14 @@ namespace ORB_SLAM2
                 pKF = pKF->GetParent();
             }
 
-            //参考关键帧的位姿
+            // 参考关键帧的位姿
             Trw = Trw * pKF->GetPose() * Two;
             // 参考关键帧到当前帧的相对位姿*参考关键帧位姿=当前帧位姿
             cv::Mat Tcw = (*lit) * Trw;
-            //相机到世界的旋转 转置就是求逆 
+            // 相机到世界的旋转 转置就是求逆
             cv::Mat Rwc = Tcw.rowRange(0, 3).colRange(0, 3).t();
-            //相机到世界的平移
-            // 由于相机位姿是相对于世界坐标系的逆，所以平移向量是通过将相机坐标系下的原点沿着相机坐标系的 z 轴反向平移得到
+            // 相机到世界的平移
+            //  由于相机位姿是相对于世界坐标系的逆，所以平移向量是通过将相机坐标系下的原点沿着相机坐标系的 z 轴反向平移得到
             cv::Mat twc = -Rwc * Tcw.rowRange(0, 3).col(3);
             // 以四元数的形式输出
             vector<float> q = Converter::toQuaternion(Rwc);
@@ -806,7 +825,7 @@ namespace ORB_SLAM2
     void System::SaveMap(const string &filename)
     {
         // Construc the full path to the map file
-        boost::filesystem::path maps_directory = "/home/ylsdb20/dev/hao_orb_ws/results";
+        boost::filesystem::path maps_directory = "/home/ylsdb20/dev/hao_orb_ws/maps";
         boost::filesystem::path full_path = maps_directory / filename;
         // lock MapPoint global Mutex when saving map
         unique_lock<mutex> MapPointGlobal(MapPoint::mGlobalMutex);
